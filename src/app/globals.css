@@ -1,26 +1,40 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --brand: #0ea5e9;           /* sky-500 — technical, precise */
+  --brand-dim: #0369a1;       /* sky-700 */
+  --good: #22c55e;
+  --needs: #f59e0b;
+  --poor: #ef4444;
+  --surface: #ffffff;
+  --surface-2: #f8fafc;
+  --border: #e2e8f0;
+  --text: #0f172a;
+  --text-2: #64748b;
+  --mono: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --surface: #0f172a;
+    --surface-2: #1e293b;
+    --border: #334155;
+    --text: #f1f5f9;
+    --text-2: #94a3b8;
   }
 }
 
+* { box-sizing: border-box; }
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--surface);
+  color: var(--text);
+  font-family: "Inter", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
+
+.rating-good    { color: var(--good); }
+.rating-needs   { color: var(--needs); }
+.rating-poor    { color: var(--poor); }
+.bg-rating-good { background: color-mix(in srgb, var(--good) 12%, transparent); }
+.bg-rating-needs{ background: color-mix(in srgb, var(--needs) 12%, transparent); }
+.bg-rating-poor { background: color-mix(in srgb, var(--poor) 12%, transparent); }
