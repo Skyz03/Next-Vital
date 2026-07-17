@@ -8,6 +8,7 @@ const redis = new Redis({
 const TTL_SECONDS = 60 * 60 * 24; // 24 hours
 const RATE_LIMIT_WINDOW = 60 * 60; // 1 hour
 const RATE_LIMIT_MAX = 5;
+const DAILY_PSI_CAP = 500;
 
 export function cacheKey(url: string, strategy: string): string {
   const encoded = Buffer.from(url).toString("base64url");
@@ -31,6 +32,17 @@ export async function setCached(key: string, value: unknown): Promise<void> {
     await redis.set(key, value, { ex: TTL_SECONDS });
   } catch {
     // cache write failure is non-fatal
+  }
+}
+
+export async function checkDailyCap(): Promise<boolean> {
+  try {
+    const key = `global:psi:${new Date().toISOString().slice(0, 10)}`;
+    const count = await redis.incr(key);
+    if (count === 1) await redis.expire(key, 60 * 60 * 26); // 26h covers timezone edge cases
+    return count <= DAILY_PSI_CAP;
+  } catch {
+    return true; // fail open — same as checkRateLimit
   }
 }
 

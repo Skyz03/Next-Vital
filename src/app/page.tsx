@@ -55,7 +55,7 @@ export default function Home() {
         </div>
 
         {/* Form */}
-        <div onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div className="flex rounded-xl border border-[var(--border)] overflow-hidden focus-within:ring-2 focus-within:ring-[var(--brand)] bg-[var(--surface)]">
             <input
               type="text"
@@ -86,8 +86,7 @@ export default function Home() {
           </div>
 
           <button
-            type="button"
-            onClick={handleSubmit}
+            type="submit"
             disabled={loading || !url.trim()}
             className="w-full py-3 rounded-xl text-sm font-semibold text-white transition-opacity disabled:opacity-40"
             style={{ background: "var(--brand)" }}
@@ -98,7 +97,7 @@ export default function Home() {
           {error && (
             <p className="text-sm text-[var(--poor)] text-center">{error}</p>
           )}
-        </div>
+        </form>
 
         {/* Footer note */}
         <p className="text-center text-xs text-[var(--text-2)] mt-8">

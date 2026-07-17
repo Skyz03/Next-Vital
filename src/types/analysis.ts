@@ -29,6 +29,7 @@ export interface NextjsFix {
   audit: string;       // PSI audit id e.g. "uses-optimized-images"
   title: string;       // Next.js-specific short title
   impact: "high" | "medium" | "low";
+  category: "performance" | "seo" | "accessibility";
   savingsMs?: number;  // estimated ms saved
   problem: string;     // what's wrong, in plain English
   fix: string;         // the exact Next.js fix to apply
@@ -41,6 +42,8 @@ export interface AnalysisResult {
   url: string;
   strategy: Strategy;
   performanceScore: number;  // 0–100
+  seoScore?: number;
+  accessibilityScore?: number;
   metrics: CoreMetric[];
   fixes: NextjsFix[];
   passingChecks: PassingCheck[];

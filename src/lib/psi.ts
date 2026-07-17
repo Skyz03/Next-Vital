@@ -2,8 +2,8 @@ import type { AuditItem, CoreMetric, MetricRating } from "@/types/analysis";
 
 const PSI_ENDPOINT = "https://www.googleapis.com/pagespeedonline/v5/runPagespeed";
 
-// Audit IDs we consider "opportunities" (have savings estimates)
 const OPPORTUNITY_AUDIT_IDS = [
+  // Performance
   "uses-optimized-images",
   "uses-text-compression",
   "render-blocking-resources",
@@ -16,6 +16,21 @@ const OPPORTUNITY_AUDIT_IDS = [
   "dom-size",
   "uses-passive-event-listeners",
   "uses-rel-preconnect",
+  "font-display",
+  "preload-lcp-image",
+  "third-party-summary",
+  "bootup-time",
+  // SEO
+  "meta-description",
+  "document-title",
+  "html-has-lang",
+  "canonical",
+  "robots-txt",
+  "link-text",
+  "structured-data",
+  // Accessibility
+  "image-alt",
+  "color-contrast",
 ];
 
 function scoreToRating(score: number): MetricRating {
@@ -35,11 +50,13 @@ export async function runPSI(
     url,
     strategy: strategy.toUpperCase(),
     key: apiKey,
-    category: "performance",
   });
+  params.append("category", "performance");
+  params.append("category", "seo");
+  params.append("category", "accessibility");
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 25_000);
+  const timeout = setTimeout(() => controller.abort(), 40_000);
 
   const start = Date.now();
   try {
@@ -64,11 +81,12 @@ export function shapePSIResponse(
   fetchTimeMs: number
 ) {
   const lhr = raw.lighthouseResult as Record<string, unknown>;
-  const cats = lhr.categories as Record<string, unknown>;
-  const perf = cats.performance as Record<string, unknown>;
+  const cats = lhr.categories as Record<string, Record<string, unknown>>;
   const audits = lhr.audits as Record<string, Record<string, unknown>>;
 
-  const perfScore = Math.round((perf.score as number) * 100);
+  const perfScore = Math.round((cats.performance.score as number) * 100);
+  const seoScore = cats.seo?.score != null ? Math.round((cats.seo.score as number) * 100) : undefined;
+  const accessibilityScore = cats.accessibility?.score != null ? Math.round((cats.accessibility.score as number) * 100) : undefined;
 
   // Core metrics
   const METRIC_MAP: Array<{
@@ -136,6 +154,8 @@ export function shapePSIResponse(
     url,
     strategy,
     performanceScore: perfScore,
+    seoScore,
+    accessibilityScore,
     metrics,
     failedAuditIds,
     passingAuditIds,

@@ -2,8 +2,10 @@ import { type NextRequest, NextResponse } from "next/server";
 import { UrlSchema, isBlockedUrl } from "@/lib/validate";
 import { runPSI, shapePSIResponse } from "@/lib/psi";
 import { getFixesForAudits, getPassingChecks } from "@/lib/nextjs-fixes";
-import { cacheKey, getCached, setCached, checkRateLimit } from "@/lib/cache";
+import { cacheKey, getCached, setCached, checkRateLimit, checkDailyCap } from "@/lib/cache";
 import type { AnalysisResult, AnalysisError } from "@/types/analysis";
+
+export const maxDuration = 60;
 
 function getIP(req: NextRequest): string {
   return (
@@ -13,8 +15,8 @@ function getIP(req: NextRequest): string {
   );
 }
 
-function errorResponse(err: AnalysisError, status: number) {
-  return NextResponse.json(err, { status });
+function errorResponse(err: AnalysisError, status: number, headers?: Record<string, string>) {
+  return NextResponse.json(err, { status, headers });
 }
 
 export async function POST(req: NextRequest) {
@@ -44,7 +46,15 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // 3. Rate limit
+  // 3. Cache check — cached hits bypass rate limiting entirely
+  const key = cacheKey(url, strategy);
+  const cached = await getCached(key);
+  if (cached) {
+    const result = cached as AnalysisResult;
+    return NextResponse.json({ ...result, fromCache: true });
+  }
+
+  // 4. Rate limit (only on cache miss)
   const ip = getIP(req);
   const rateLimit = await checkRateLimit(ip);
   if (!rateLimit.allowed) {
@@ -55,19 +65,21 @@ export async function POST(req: NextRequest) {
         message: `You've used your 5 free audits for this hour. Try again in ${Math.ceil(rateLimit.retryAfter / 60)} minutes.`,
         retryAfter: rateLimit.retryAfter,
       },
-      429
+      429,
+      { "Retry-After": String(rateLimit.retryAfter) }
     );
   }
 
-  // 4. Cache check
-  const key = cacheKey(url, strategy);
-  const cached = await getCached(key);
-  if (cached) {
-    const result = cached as AnalysisResult;
-    return NextResponse.json({ ...result, fromCache: true });
+  // 5. Global daily PSI cap (protects against many-IP traffic spikes)
+  const withinDailyCap = await checkDailyCap();
+  if (!withinDailyCap) {
+    return errorResponse(
+      { error: true, code: "RATE_LIMITED", message: "Daily audit capacity reached. Try again tomorrow." },
+      503
+    );
   }
 
-  // 5. Run PSI
+  // 6. Run PSI
   let psiData: Awaited<ReturnType<typeof runPSI>>;
   try {
     psiData = await runPSI(url, strategy);
@@ -85,7 +97,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // 6. Shape + enrich with Next.js fixes
+  // 7. Shape + enrich with Next.js fixes
   const shaped = shapePSIResponse(psiData.raw as Record<string, unknown>, url, strategy, psiData.fetchTimeMs);
   const fixes = getFixesForAudits(shaped.failedAuditIds, shaped.savingsMap, shaped.auditItemsMap);
   const passingChecks = getPassingChecks(shaped.passingAuditIds);
@@ -94,6 +106,8 @@ export async function POST(req: NextRequest) {
     url: shaped.url,
     strategy: shaped.strategy,
     performanceScore: shaped.performanceScore,
+    seoScore: shaped.seoScore,
+    accessibilityScore: shaped.accessibilityScore,
     metrics: shaped.metrics,
     fixes,
     passingChecks,
@@ -103,7 +117,7 @@ export async function POST(req: NextRequest) {
     fetchTimeMs: shaped.fetchTimeMs,
   };
 
-  // 7. Cache + return
+  // 8. Cache + return
   await setCached(key, result);
   return NextResponse.json(result);
 }
