@@ -1,36 +1,78 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Nextvital
 
-## Getting Started
+Paste a Next.js URL. Get performance fixes written for Next.js — not generic Lighthouse advice.
 
-First, run the development server:
+Most PageSpeed tools tell you "optimize images." Nextvital tells you to replace `<img>` with `next/image`, add the `priority` prop on your LCP image, and links you to the Next.js docs. The fix map covers ~26 audits across performance, SEO, and accessibility, all translated into App Router patterns.
+
+---
+
+## How it works
+
+```
+URL input
+  → Zod validation + SSRF block (private IPs, localhost)
+  → Redis cache check (24h TTL — cached hits are free and instant)
+  → Per-IP rate limit (5 live audits/hour) + global daily cap (500/day)
+  → Google PageSpeed Insights API (performance + SEO + accessibility categories)
+  → Shaping layer — extracts metrics, failed audits, savings estimates
+  → Next.js fix map — maps PSI audit IDs to actionable Next.js-specific fixes
+  → Results page — score rings, Core Web Vitals, categorized fixes, passing checks
+```
+
+Shared `/results?url=…` links work for anyone — they hit the Redis cache rather than re-running a live PSI audit.
+
+---
+
+## Tech stack
+
+| Layer | Choice |
+|-------|--------|
+| Framework | Next.js 16 App Router (TypeScript) |
+| Styling | Tailwind CSS 4 + CSS custom properties |
+| Validation | Zod |
+| Caching / rate limiting | Upstash Redis |
+| External API | Google PageSpeed Insights v5 |
+| Deploy | Vercel |
+
+---
+
+## Local setup
+
+```bash
+git clone https://github.com/Skyz03/Next-Vital.git
+cd Next-Vital
+npm install
+cp .env.example .env.local
+```
+
+Fill in `.env.local`:
+
+| Key | Where to get it |
+|-----|----------------|
+| `GOOGLE_PSI_API_KEY` | [Google Cloud Console](https://developers.google.com/speed/docs/insights/v5/get-started) — free, 25k/day |
+| `UPSTASH_REDIS_REST_URL` | [Upstash console](https://upstash.com) — free tier |
+| `UPSTASH_REDIS_REST_TOKEN` | Same Upstash Redis instance |
+| `NEXT_PUBLIC_APP_URL` | `http://localhost:3000` for local dev |
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) and paste any public Next.js URL.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Deploy to Vercel
 
-## Learn More
+1. Import `Skyz03/Next-Vital` in the [Vercel dashboard](https://vercel.com/new). Framework and package manager are auto-detected.
+2. Add the 4 environment variables under **Settings → Environment Variables** (Production + Preview).
+3. Set `NEXT_PUBLIC_APP_URL` to your Vercel domain (e.g. `https://nextvital.vercel.app`).
+4. Deploy, then **redeploy once** after setting `NEXT_PUBLIC_APP_URL` — it's inlined at build time for OG images and the sitemap.
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Roadmap
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Server-side SEO checklist** (`docs/seo-checklist-spec.md`) — direct HTML inspection independent of PSI, covering 22 checks (social tags, Open Graph, canonical, structured data, Next.js-specific patterns). Needs SSRF hardening (DNS resolution checks) before shipping.
+- **Full CSP** — intentionally deferred; inline styles + Next.js bootstrap scripts make a strict policy high-effort without third-party scripts to police.
+- **Tests + CI** — unit tests for `lib/validate`, `lib/nextjs-fixes`, `lib/cache`; GitHub Actions for lint + build on PR.
