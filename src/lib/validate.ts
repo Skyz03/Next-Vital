@@ -17,7 +17,7 @@ export const UrlSchema = z.object({
   url: z
     .string()
     .min(1, "URL is required")
-    .transform((val) => (val.startsWith("http") ? val : `https://${val}`))
+    .transform((val) => (/^https?:\/\//.test(val) ? val : `https://${val}`))
     .pipe(
       z.string().url("Please enter a valid URL")
     ),
@@ -30,5 +30,20 @@ export function isBlockedUrl(url: string): boolean {
     return BLOCKED_PATTERNS.some((pattern) => pattern.test(hostname));
   } catch {
     return true;
+  }
+}
+
+// Canonical form before cache keying: lowercase host, no fragment, no trailing slash
+export function normalizeUrl(url: string): string {
+  try {
+    const u = new URL(url);
+    u.hostname = u.hostname.toLowerCase();
+    u.hash = "";
+    if (u.pathname.length > 1 && u.pathname.endsWith("/")) {
+      u.pathname = u.pathname.slice(0, -1);
+    }
+    return u.toString();
+  } catch {
+    return url;
   }
 }

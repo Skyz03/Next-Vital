@@ -29,8 +29,14 @@ function ResultsContent() {
       if (raw) stored = JSON.parse(raw) as AnalysisResult;
     } catch {}
 
-    // Use stored result if it matches the current URL param (or there's no URL param)
-    if (stored && (!urlParam || stored.url === urlParam || stored.url === decodeURIComponent(urlParam))) {
+    // Use stored result only when both URL and strategy match — opening a
+    // ?strategy=desktop link while a mobile result is cached would otherwise
+    // display mobile data under a desktop label.
+    if (
+      stored &&
+      stored.strategy === strategyParam &&
+      (!urlParam || stored.url === urlParam || stored.url === decodeURIComponent(urlParam))
+    ) {
       setResult(stored);
       return;
     }
