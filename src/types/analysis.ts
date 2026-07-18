@@ -9,6 +9,8 @@ export interface CoreMetric {
   displayValue: string; // e.g. "2.4 s" or "0.12"
   score: number;       // 0–100
   rating: MetricRating;
+  hasData: boolean;    // false when metric has no lab or field data (e.g. INP on sites without CrUX)
+  source?: "lab" | "field"; // "field" when value comes from CrUX rather than Lighthouse lab run
   description: string;
 }
 

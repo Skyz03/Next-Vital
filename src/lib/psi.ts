@@ -33,10 +33,37 @@ const OPPORTUNITY_AUDIT_IDS = [
   "color-contrast",
 ];
 
+// Informative audits have score=null; they are relevant when they have items,
+// not when they fail a 0-1 score threshold.
+const INFORMATIVE_AUDIT_IDS = new Set([
+  "largest-contentful-paint-element",
+  "third-party-summary",
+]);
+
 function scoreToRating(score: number): MetricRating {
   if (score >= 90) return "good";
   if (score >= 50) return "needs-improvement";
   return "poor";
+}
+
+function cruxCategoryToRating(category: string): MetricRating {
+  if (category === "FAST") return "good";
+  if (category === "AVERAGE") return "needs-improvement";
+  return "poor";
+}
+
+// Read savings from Lighthouse 12+ metricSavings first, fall back to legacy overallSavingsMs.
+// metricSavings values are per-metric ms estimates; take the max of the time-denominated ones.
+function getSavingsMs(audit: Record<string, unknown>): number | undefined {
+  const metricSavings = audit.metricSavings as Record<string, number> | undefined;
+  if (metricSavings) {
+    const candidates = [metricSavings.LCP, metricSavings.FCP, metricSavings.TBT, metricSavings.INP]
+      .filter((v): v is number => typeof v === "number" && v > 0);
+    if (candidates.length > 0) return Math.round(Math.max(...candidates));
+  }
+  const details = audit.details as Record<string, unknown> | undefined;
+  if (typeof details?.overallSavingsMs === "number") return Math.round(details.overallSavingsMs as number);
+  return undefined;
 }
 
 export async function runPSI(
@@ -88,7 +115,6 @@ export function shapePSIResponse(
   const seoScore = cats.seo?.score != null ? Math.round((cats.seo.score as number) * 100) : undefined;
   const accessibilityScore = cats.accessibility?.score != null ? Math.round((cats.accessibility.score as number) * 100) : undefined;
 
-  // Core metrics
   const METRIC_MAP: Array<{
     id: CoreMetric["id"];
     auditId: string;
@@ -105,19 +131,42 @@ export function shapePSIResponse(
 
   const metrics: CoreMetric[] = METRIC_MAP.map(({ id, auditId, label, description }) => {
     const audit = audits[auditId] ?? {};
-    const score = audit.score != null ? Math.round((audit.score as number) * 100) : 0;
+    const rawScore = audit.score as number | null | undefined;
+    // Null score = no lab data for this metric (common for INP)
+    const hasLabData = rawScore != null;
+    const score = hasLabData ? Math.round(rawScore * 100) : 0;
     return {
       id,
       label,
       value: (audit.numericValue as number) ?? 0,
       displayValue: (audit.displayValue as string) ?? "—",
       score,
-      rating: scoreToRating(score),
+      rating: hasLabData ? scoreToRating(score) : "good", // placeholder; overwritten below if no data
+      hasData: hasLabData,
+      source: hasLabData ? "lab" as const : undefined,
       description,
     };
   });
 
-  // Opportunities — failed audits with savings; passing audits for "what's good" section
+  // For INP: Lighthouse lab runs rarely produce a score. Fall back to CrUX field data.
+  const inpMetric = metrics.find((m) => m.id === "inp");
+  if (inpMetric && !inpMetric.hasData) {
+    const le = raw.loadingExperience as Record<string, unknown> | undefined;
+    const cruxMetrics = le?.metrics as Record<string, Record<string, unknown>> | undefined;
+    const cruxInp = cruxMetrics?.INTERACTION_TO_NEXT_PAINT;
+    if (cruxInp) {
+      const percentile = cruxInp.percentile as number;
+      const category = cruxInp.category as string;
+      inpMetric.hasData = true;
+      inpMetric.source = "field";
+      inpMetric.value = percentile;
+      inpMetric.displayValue = `${percentile} ms`;
+      inpMetric.rating = cruxCategoryToRating(category);
+      inpMetric.score = inpMetric.rating === "good" ? 90 : inpMetric.rating === "needs-improvement" ? 70 : 20;
+    }
+  }
+
+  // Opportunities and passing checks
   const savingsMap: Record<string, number> = {};
   const auditItemsMap: Record<string, AuditItem[]> = {};
   const failedAuditIds: string[] = [];
@@ -126,16 +175,21 @@ export function shapePSIResponse(
   for (const auditId of OPPORTUNITY_AUDIT_IDS) {
     const audit = audits[auditId];
     if (!audit) continue;
-    const score = (audit.score as number) ?? 1;
+    const score = audit.score as number | null;
+    const details = audit.details as Record<string, unknown> | undefined;
 
-    if (score < 0.9) {
+    // Informative audits have score=null; treat as failed when they have items to show
+    const isInformative = INFORMATIVE_AUDIT_IDS.has(auditId);
+    const hasFailed = isInformative
+      ? Array.isArray(details?.items) && (details!.items as unknown[]).length > 0
+      : (score ?? 1) < 0.9;
+
+    if (hasFailed) {
       failedAuditIds.push(auditId);
-      const details = audit.details as Record<string, unknown> | undefined;
-      if (details?.overallSavingsMs) {
-        savingsMap[auditId] = Math.round(details.overallSavingsMs as number);
-      }
+      const savings = getSavingsMs(audit);
+      if (savings !== undefined) savingsMap[auditId] = savings;
       if (Array.isArray(details?.items)) {
-        auditItemsMap[auditId] = (details.items as Array<Record<string, unknown>>)
+        auditItemsMap[auditId] = (details!.items as Array<Record<string, unknown>>)
           .slice(0, 5)
           .map((item): AuditItem => ({
             url: (item.url as string) || (item.label as string) || undefined,
@@ -145,7 +199,8 @@ export function shapePSIResponse(
           }))
           .filter((item) => item.url);
       }
-    } else {
+    } else if (!isInformative) {
+      // Don't add informative audits to passing checks — they have no concept of "passing"
       passingAuditIds.push(auditId);
     }
   }

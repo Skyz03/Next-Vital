@@ -500,7 +500,10 @@ export function getFixesForAudits(
     }))
     .sort((a, b) => {
       const order = { high: 0, medium: 1, low: 2 };
-      return order[a.impact] - order[b.impact];
+      const impactDiff = order[a.impact] - order[b.impact];
+      if (impactDiff !== 0) return impactDiff;
+      // Within same impact bucket, sort by measured savings descending
+      return (b.savingsMs ?? 0) - (a.savingsMs ?? 0);
     });
 }
 
