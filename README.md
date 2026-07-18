@@ -1,8 +1,15 @@
 # Nextvital
 
-Paste a Next.js URL. Get performance fixes written for Next.js — not generic Lighthouse advice.
+**PageSpeed Insights, interpreted for Next.js.** Paste a URL, get fixes that reference `next/image`, `next/font`, App Router patterns, dynamic imports, and ISR — not generic Lighthouse advice.
 
-Most PageSpeed tools tell you "optimize images." Nextvital tells you to replace `<img>` with `next/image`, add the `priority` prop on your LCP image, and links you to the Next.js docs. The fix map covers ~26 audits across performance, SEO, and accessibility, all translated into App Router patterns.
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/Skyz03/Next-Vital)
+![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-38bdf8?logo=tailwindcss)
+
+---
+
+Most performance tools tell you to "optimize your images." Nextvital tells you exactly which component to reach for, shows you the before/after code, and links you to the Next.js docs. The fix map covers 12 PSI audits translated into App Router-specific advice.
 
 ---
 
@@ -11,15 +18,15 @@ Most PageSpeed tools tell you "optimize images." Nextvital tells you to replace 
 ```
 URL input
   → Zod validation + SSRF block (private IPs, localhost)
-  → Redis cache check (24h TTL — cached hits are free and instant)
-  → Per-IP rate limit (5 live audits/hour) + global daily cap (500/day)
-  → Google PageSpeed Insights API (performance + SEO + accessibility categories)
-  → Shaping layer — extracts metrics, failed audits, savings estimates
-  → Next.js fix map — maps PSI audit IDs to actionable Next.js-specific fixes
-  → Results page — score rings, Core Web Vitals, categorized fixes, passing checks
+  → Redis cache check (24h TTL — cached hits are instant)
+  → Per-IP rate limit (5 live audits/hour)
+  → Google PageSpeed Insights API (performance category)
+  → Shaping layer — extracts Core Web Vitals, failed audits, savings estimates
+  → Next.js fix map — maps PSI audit IDs → actionable Next.js fixes
+  → Results page — score ring, Core Web Vitals, fix cards with code examples
 ```
 
-Shared `/results?url=…` links work for anyone — they hit the Redis cache rather than re-running a live PSI audit.
+Shareable `/results?url=…` links serve from Redis cache — no re-audit needed.
 
 ---
 
@@ -29,10 +36,10 @@ Shared `/results?url=…` links work for anyone — they hit the Redis cache rat
 |-------|--------|
 | Framework | Next.js 16 App Router (TypeScript) |
 | Styling | Tailwind CSS 4 + CSS custom properties |
-| Validation | Zod |
+| Validation | Zod 4 |
 | Caching / rate limiting | Upstash Redis |
 | External API | Google PageSpeed Insights v5 |
-| Deploy | Vercel |
+| Deploy target | Vercel |
 
 ---
 
@@ -49,7 +56,7 @@ Fill in `.env.local`:
 
 | Key | Where to get it |
 |-----|----------------|
-| `GOOGLE_PSI_API_KEY` | [Google Cloud Console](https://developers.google.com/speed/docs/insights/v5/get-started) — free, 25k/day |
+| `GOOGLE_PSI_API_KEY` | [Google Cloud Console](https://developers.google.com/speed/docs/insights/v5/get-started) — free, 25k requests/day |
 | `UPSTASH_REDIS_REST_URL` | [Upstash console](https://upstash.com) — free tier |
 | `UPSTASH_REDIS_REST_TOKEN` | Same Upstash Redis instance |
 | `NEXT_PUBLIC_APP_URL` | `http://localhost:3000` for local dev |
@@ -67,12 +74,35 @@ Open [http://localhost:3000](http://localhost:3000) and paste any public Next.js
 1. Import `Skyz03/Next-Vital` in the [Vercel dashboard](https://vercel.com/new). Framework and package manager are auto-detected.
 2. Add the 4 environment variables under **Settings → Environment Variables** (Production + Preview).
 3. Set `NEXT_PUBLIC_APP_URL` to your Vercel domain (e.g. `https://nextvital.vercel.app`).
-4. Deploy, then **redeploy once** after setting `NEXT_PUBLIC_APP_URL` — it's inlined at build time for OG images and the sitemap.
+4. Deploy. Once the domain is live, redeploy once — `NEXT_PUBLIC_APP_URL` is inlined at build time for OG images and the sitemap.
+
+---
+
+## Project structure
+
+```
+src/
+├── app/
+│   ├── api/analyze/route.ts   # POST handler — validation, rate limit, PSI, cache
+│   ├── page.tsx               # URL input form
+│   └── results/page.tsx       # Score ring + metrics + fix cards
+├── components/
+│   ├── ScoreRing.tsx          # Animated SVG score circle
+│   ├── MetricCard.tsx         # Core Web Vital tile
+│   └── FixCard.tsx            # Collapsible fix with code example
+├── lib/
+│   ├── psi.ts                 # PSI fetch + response shaping
+│   ├── nextjs-fixes.ts        # PSI audit ID → Next.js fix map
+│   ├── cache.ts               # Upstash Redis cache + rate limiter
+│   └── validate.ts            # Zod schema + SSRF block list
+└── types/
+    └── analysis.ts            # Shared TypeScript types
+```
 
 ---
 
 ## Roadmap
 
-- **Server-side SEO checklist** (`docs/seo-checklist-spec.md`) — direct HTML inspection independent of PSI, covering 22 checks (social tags, Open Graph, canonical, structured data, Next.js-specific patterns). Needs SSRF hardening (DNS resolution checks) before shipping.
-- **Full CSP** — intentionally deferred; inline styles + Next.js bootstrap scripts make a strict policy high-effort without third-party scripts to police.
+- **Server-side SEO checklist** (`docs/seo-checklist-spec.md`) — direct HTML inspection covering 22 checks: Open Graph, canonical URLs, structured data, Next.js-specific patterns. Deferred pending SSRF hardening (DNS resolution checks).
 - **Tests + CI** — unit tests for `lib/validate`, `lib/nextjs-fixes`, `lib/cache`; GitHub Actions for lint + build on PR.
+- **Full CSP** — deferred; inline styles and Next.js bootstrap scripts make a strict policy high-effort without third-party scripts to police.
