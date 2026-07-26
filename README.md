@@ -1,4 +1,4 @@
-# Nextvital 1
+# Nextvital 
 
 **PageSpeed Insights, interpreted for Next.js.** Paste a URL, get fixes that reference `next/image`, `next/font`, App Router patterns, dynamic imports, and ISR — not generic Lighthouse advice.
 
