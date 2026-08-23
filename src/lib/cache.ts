@@ -92,10 +92,3 @@ export async function releaseInflightLock(key: string): Promise<void> {
   }
 }
 
-export async function isInflightLocked(key: string): Promise<boolean> {
-  try {
-    return (await redis.exists(`inflight:${key}`)) === 1;
-  } catch {
-    return false; // fail open
-  }
-}

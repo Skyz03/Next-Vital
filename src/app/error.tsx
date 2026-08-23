@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 interface Props {
   error: Error & { digest?: string };
   unstable_retry: () => void;
@@ -17,9 +19,9 @@ export default function Error({ error, unstable_retry }: Props) {
       >
         Try again
       </button>
-      <a href="/" className="text-xs text-[var(--text-2)] hover:text-[var(--text)]">
+      <Link href="/" className="text-xs text-[var(--text-2)] hover:text-[var(--text)]">
         ← Go home
-      </a>
+      </Link>
     </div>
   );
 }

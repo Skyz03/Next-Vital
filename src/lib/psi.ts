@@ -1,49 +1,37 @@
+import { AUDIT_IDS } from "@/lib/nextjs-fixes";
 import type { AuditItem, CoreMetric, MetricRating } from "@/types/analysis";
 
 const PSI_ENDPOINT = "https://www.googleapis.com/pagespeedonline/v5/runPagespeed";
 
-const OPPORTUNITY_AUDIT_IDS = [
-  // Performance
-  "uses-optimized-images",
-  "uses-text-compression",
-  "render-blocking-resources",
-  "unused-javascript",
-  "unused-css-rules",
-  "efficient-animated-content",
-  "uses-long-cache-ttl",
-  "largest-contentful-paint-element",
-  "server-response-time",
-  "dom-size",
-  "uses-passive-event-listeners",
-  "uses-rel-preconnect",
-  "font-display",
-  "preload-lcp-image",
-  "third-party-summary",
-  "bootup-time",
-  // SEO
-  "meta-description",
-  "document-title",
-  "html-has-lang",
-  "canonical",
-  "robots-txt",
-  "link-text",
-  "structured-data",
-  // Accessibility
-  "image-alt",
-  "color-contrast",
-];
+// A Lighthouse audit is only "failed" below this score. 0.9 matches the
+// threshold Lighthouse itself uses to colour an audit green.
+const PASS_THRESHOLD = 0.9;
 
-// Informative audits have score=null; they are relevant when they have items,
-// not when they fail a 0-1 score threshold.
-const INFORMATIVE_AUDIT_IDS = new Set([
-  "largest-contentful-paint-element",
-  "third-party-summary",
-]);
+/**
+ * How to read an audit's result depends on its scoreDisplayMode:
+ *
+ *  binary | numeric | metricSavings → a real 0-1 score, compare to the threshold
+ *  informative                      → no pass/fail concept; Lighthouse is just
+ *                                     reporting. Only worth surfacing when it
+ *                                     comes with an estimated saving.
+ *  notApplicable | manual | error   → Lighthouse did not evaluate this page.
+ *                                     Neither a failure nor something we can
+ *                                     claim is "already optimized".
+ */
+const UNEVALUATED_MODES = new Set(["notApplicable", "manual", "error"]);
 
 function scoreToRating(score: number): MetricRating {
   if (score >= 90) return "good";
   if (score >= 50) return "needs-improvement";
   return "poor";
+}
+
+// Lighthouse phrases server-response-time's displayValue as a sentence
+// ("Root document took 290 ms") rather than a bare value like every other
+// metric. Rendered as a headline number it reads as broken, so TTFB is
+// formatted from numericValue instead.
+function formatDuration(ms: number): string {
+  return ms < 1000 ? `${Math.round(ms)} ms` : `${(ms / 1000).toFixed(1)} s`;
 }
 
 function cruxCategoryToRating(category: string): MetricRating {
@@ -52,8 +40,9 @@ function cruxCategoryToRating(category: string): MetricRating {
   return "poor";
 }
 
-// Read savings from Lighthouse 12+ metricSavings first, fall back to legacy overallSavingsMs.
-// metricSavings values are per-metric ms estimates; take the max of the time-denominated ones.
+// Lighthouse 13 dropped details.overallSavingsMs from most audits in favour of
+// a per-metric metricSavings object. Read the new field first and fall back to
+// the legacy one, which a few classic opportunity audits still carry.
 function getSavingsMs(audit: Record<string, unknown>): number | undefined {
   const metricSavings = audit.metricSavings as Record<string, number> | undefined;
   if (metricSavings) {
@@ -62,8 +51,32 @@ function getSavingsMs(audit: Record<string, unknown>): number | undefined {
     if (candidates.length > 0) return Math.round(Math.max(...candidates));
   }
   const details = audit.details as Record<string, unknown> | undefined;
-  if (typeof details?.overallSavingsMs === "number") return Math.round(details.overallSavingsMs as number);
+  if (typeof details?.overallSavingsMs === "number") return Math.round(details.overallSavingsMs);
   return undefined;
+}
+
+// Insight audits report their findings as a table of resources. Pull out the
+// handful of fields we display and drop rows we can't label.
+function getAuditItems(details: Record<string, unknown> | undefined): AuditItem[] | undefined {
+  if (!Array.isArray(details?.items)) return undefined;
+
+  const items = (details.items as Array<Record<string, unknown>>)
+    .slice(0, 5)
+    .map((item): AuditItem => {
+      const node = item.node as Record<string, unknown> | undefined;
+      return {
+        url: typeof item.url === "string" ? item.url : undefined,
+        label:
+          (typeof item.label === "string" ? item.label : undefined) ??
+          (typeof node?.nodeLabel === "string" ? node.nodeLabel : undefined),
+        wastedBytes: typeof item.wastedBytes === "number" ? Math.round(item.wastedBytes) : undefined,
+        totalBytes: typeof item.totalBytes === "number" ? item.totalBytes : undefined,
+        wastedMs: typeof item.wastedMs === "number" ? Math.round(item.wastedMs) : undefined,
+      };
+    })
+    .filter((item) => item.url ?? item.label);
+
+  return items.length > 0 ? items : undefined;
 }
 
 export async function runPSI(
@@ -113,42 +126,51 @@ export function shapePSIResponse(
 
   const perfScore = Math.round((cats.performance.score as number) * 100);
   const seoScore = cats.seo?.score != null ? Math.round((cats.seo.score as number) * 100) : undefined;
-  const accessibilityScore = cats.accessibility?.score != null ? Math.round((cats.accessibility.score as number) * 100) : undefined;
+  const accessibilityScore =
+    cats.accessibility?.score != null
+      ? Math.round((cats.accessibility.score as number) * 100)
+      : undefined;
 
   const METRIC_MAP: Array<{
     id: CoreMetric["id"];
     auditId: string;
     label: string;
     description: string;
+    format?: (numericValue: number) => string;
   }> = [
     { id: "lcp", auditId: "largest-contentful-paint", label: "LCP", description: "Time until the largest image or text block is rendered." },
     { id: "cls", auditId: "cumulative-layout-shift", label: "CLS", description: "How much the page layout shifts unexpectedly during load." },
     { id: "inp", auditId: "interaction-to-next-paint", label: "INP", description: "Responsiveness to user interactions across the page lifecycle." },
     { id: "fcp", auditId: "first-contentful-paint", label: "FCP", description: "Time until first text or image is painted." },
-    { id: "ttfb", auditId: "server-response-time", label: "TTFB", description: "Time until the first byte is received from the server." },
+    { id: "ttfb", auditId: "server-response-time", label: "TTFB", description: "Time until the first byte is received from the server.", format: formatDuration },
     { id: "tbt", auditId: "total-blocking-time", label: "TBT", description: "Total time the main thread was blocked during load." },
   ];
 
-  const metrics: CoreMetric[] = METRIC_MAP.map(({ id, auditId, label, description }) => {
+  const metrics: CoreMetric[] = METRIC_MAP.map(({ id, auditId, label, description, format }) => {
     const audit = audits[auditId] ?? {};
     const rawScore = audit.score as number | null | undefined;
     // Null score = no lab data for this metric (common for INP)
     const hasLabData = rawScore != null;
     const score = hasLabData ? Math.round(rawScore * 100) : 0;
+    const numericValue = (audit.numericValue as number) ?? 0;
     return {
       id,
       label,
-      value: (audit.numericValue as number) ?? 0,
-      displayValue: (audit.displayValue as string) ?? "—",
+      value: numericValue,
+      displayValue:
+        format && audit.numericValue != null
+          ? format(numericValue)
+          : (audit.displayValue as string) ?? "—",
       score,
       rating: hasLabData ? scoreToRating(score) : "good", // placeholder; overwritten below if no data
       hasData: hasLabData,
-      source: hasLabData ? "lab" as const : undefined,
+      source: hasLabData ? ("lab" as const) : undefined,
       description,
     };
   });
 
-  // For INP: Lighthouse lab runs rarely produce a score. Fall back to CrUX field data.
+  // Lighthouse cannot measure INP in a lab run — it needs real interactions.
+  // Fall back to the CrUX field data PSI returns alongside the lab result.
   const inpMetric = metrics.find((m) => m.id === "inp");
   if (inpMetric && !inpMetric.hasData) {
     const le = raw.loadingExperience as Record<string, unknown> | undefined;
@@ -162,45 +184,39 @@ export function shapePSIResponse(
       inpMetric.value = percentile;
       inpMetric.displayValue = `${percentile} ms`;
       inpMetric.rating = cruxCategoryToRating(category);
-      inpMetric.score = inpMetric.rating === "good" ? 90 : inpMetric.rating === "needs-improvement" ? 70 : 20;
+      inpMetric.score =
+        inpMetric.rating === "good" ? 90 : inpMetric.rating === "needs-improvement" ? 70 : 20;
     }
   }
 
-  // Opportunities and passing checks
+  // Split the audits we understand into things to fix and things already done.
   const savingsMap: Record<string, number> = {};
   const auditItemsMap: Record<string, AuditItem[]> = {};
   const failedAuditIds: string[] = [];
   const passingAuditIds: string[] = [];
 
-  for (const auditId of OPPORTUNITY_AUDIT_IDS) {
+  for (const auditId of AUDIT_IDS) {
     const audit = audits[auditId];
     if (!audit) continue;
-    const score = audit.score as number | null;
-    const details = audit.details as Record<string, unknown> | undefined;
 
-    // Informative audits have score=null; treat as failed when they have items to show
-    const isInformative = INFORMATIVE_AUDIT_IDS.has(auditId);
+    const mode = audit.scoreDisplayMode as string | undefined;
+    if (mode && UNEVALUATED_MODES.has(mode)) continue;
+
+    const details = audit.details as Record<string, unknown> | undefined;
+    const savings = getSavingsMs(audit);
+    const isInformative = mode === "informative";
+
     const hasFailed = isInformative
-      ? Array.isArray(details?.items) && (details!.items as unknown[]).length > 0
-      : (score ?? 1) < 0.9;
+      ? savings !== undefined && savings > 0
+      : ((audit.score as number | null) ?? 1) < PASS_THRESHOLD;
 
     if (hasFailed) {
       failedAuditIds.push(auditId);
-      const savings = getSavingsMs(audit);
       if (savings !== undefined) savingsMap[auditId] = savings;
-      if (Array.isArray(details?.items)) {
-        auditItemsMap[auditId] = (details!.items as Array<Record<string, unknown>>)
-          .slice(0, 5)
-          .map((item): AuditItem => ({
-            url: (item.url as string) || (item.label as string) || undefined,
-            wastedBytes: item.wastedBytes as number | undefined,
-            totalBytes: item.totalBytes as number | undefined,
-            wastedMs: item.wastedMs as number | undefined,
-          }))
-          .filter((item) => item.url);
-      }
+      const items = getAuditItems(details);
+      if (items) auditItemsMap[auditId] = items;
     } else if (!isInformative) {
-      // Don't add informative audits to passing checks — they have no concept of "passing"
+      // An informative audit passing means nothing — don't claim credit for it.
       passingAuditIds.push(auditId);
     }
   }

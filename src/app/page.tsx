@@ -29,8 +29,9 @@ export default function Home() {
         return;
       }
 
-      // Store result in sessionStorage and navigate to results page
-      sessionStorage.setItem("nextvital_result", JSON.stringify(data));
+      // The audit above populated the Redis cache, so the results page can just
+      // ask the API for it — no client-side handoff needed, and the link works
+      // for anyone it gets shared with.
       const encoded = encodeURIComponent(url);
       router.push(`/results?url=${encoded}&strategy=${strategy}`);
     } catch {

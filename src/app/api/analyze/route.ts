@@ -10,7 +10,6 @@ import {
   checkDailyCap,
   acquireInflightLock,
   releaseInflightLock,
-  isInflightLocked,
 } from "@/lib/cache";
 import type { AnalysisResult, AnalysisError } from "@/types/analysis";
 
@@ -25,7 +24,6 @@ function getIP(req: NextRequest): string {
   if (realIp) return realIp;
   const forwarded = req.headers.get("x-forwarded-for");
   if (forwarded) {
-    // Last entry is the most recently added (platform-injected), not client-controlled
     const parts = forwarded.split(",");
     return parts[parts.length - 1].trim();
   }
@@ -59,12 +57,17 @@ export async function POST(req: NextRequest) {
   // 2. SSRF check
   if (isBlockedUrl(url)) {
     return errorResponse(
-      { error: true, code: "SSRF_BLOCKED", message: "That URL points to a private or reserved address and cannot be analyzed." },
+      {
+        error: true,
+        code: "SSRF_BLOCKED",
+        message: "That URL points to a private or reserved address and cannot be analyzed.",
+      },
       400
     );
   }
 
-  // 3. Cache check — cached hits bypass rate limiting and quota entirely
+  // 3. Cache check — a cached hit costs us nothing, so it neither consumes the
+  //    caller's hourly quota nor counts against the global daily PSI budget.
   const key = cacheKey(url, strategy);
   const cached = await getCached(key);
   if (cached) {
@@ -72,17 +75,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ...result, fromCache: true });
   }
 
-  // 4. Global daily PSI cap — check before per-IP rate limit so users don't burn
-  //    their hourly quota when the service itself is at capacity
-  const withinDailyCap = await checkDailyCap();
-  if (!withinDailyCap) {
-    return errorResponse(
-      { error: true, code: "RATE_LIMITED", message: "Daily audit capacity reached. Try again tomorrow." },
-      503
-    );
-  }
-
-  // 5. Per-IP rate limit
+  // 4. Per-IP rate limit
   const ip = getIP(req);
   const rateLimit = await checkRateLimit(ip);
   if (!rateLimit.allowed) {
@@ -90,73 +83,101 @@ export async function POST(req: NextRequest) {
       {
         error: true,
         code: "RATE_LIMITED",
-        message: `You've used your 5 free audits for this hour. Try again in ${Math.ceil(rateLimit.retryAfter / 60)} minutes.`,
+        message: `You've used your 5 free audits for this hour. Try again in ${Math.ceil(
+          rateLimit.retryAfter / 60
+        )} minutes.`,
         retryAfter: rateLimit.retryAfter,
       },
       429,
-      { "Retry-After": String(rateLimit.retryAfter) }
+      { "Retry-After": String(rateLimit.retryAfter), "X-RateLimit-Remaining": "0" }
     );
   }
 
-  // 6. In-flight lock — prevent two concurrent requests for the same URL from
-  //    both hitting PSI (cache stampede). Second caller gets a 409 and can retry
-  //    in a few seconds once the first request has populated the cache.
-  if (await isInflightLocked(key)) {
+  // 5. In-flight lock — stops two concurrent requests for the same URL from both
+  //    calling PSI. SET NX is atomic, so acquiring it *is* the check; the loser
+  //    gets a 409 and can retry in a few seconds into a warm cache.
+  if (!(await acquireInflightLock(key))) {
     return errorResponse(
-      { error: true, code: "PSI_ERROR", message: "An audit for this URL is already in progress. Please retry in a few seconds." },
+      {
+        error: true,
+        code: "PSI_ERROR",
+        message: "An audit for this URL is already in progress. Please retry in a few seconds.",
+      },
       409
     );
   }
 
-  const lockAcquired = await acquireInflightLock(key);
-  if (!lockAcquired) {
-    return errorResponse(
-      { error: true, code: "PSI_ERROR", message: "An audit for this URL is already in progress. Please retry in a few seconds." },
-      409
-    );
-  }
-
-  // 7. Run PSI
-  let psiData: Awaited<ReturnType<typeof runPSI>>;
   try {
-    psiData = await runPSI(url, strategy);
-  } catch (err) {
-    await releaseInflightLock(key);
-    if (err instanceof Error && err.name === "AbortError") {
+    // 6. Global daily PSI budget. Checked here, immediately before the only call
+    //    that actually spends it — counting earlier would let requests that get
+    //    rejected by the rate limiter or the lock burn the day's quota.
+    if (!(await checkDailyCap())) {
       return errorResponse(
-        { error: true, code: "PSI_TIMEOUT", message: "The audit timed out. The target site may be slow or unreachable." },
-        504
+        {
+          error: true,
+          code: "RATE_LIMITED",
+          message: "Daily audit capacity reached. Try again tomorrow.",
+        },
+        503
       );
     }
-    const message = err instanceof Error ? err.message : "Unknown error";
-    return errorResponse(
-      { error: true, code: "PSI_ERROR", message: `PageSpeed Insights returned an error: ${message}` },
-      502
+
+    // 7. Run PSI
+    let psiData: Awaited<ReturnType<typeof runPSI>>;
+    try {
+      psiData = await runPSI(url, strategy);
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") {
+        return errorResponse(
+          {
+            error: true,
+            code: "PSI_TIMEOUT",
+            message: "The audit timed out. The target site may be slow or unreachable.",
+          },
+          504
+        );
+      }
+      const message = err instanceof Error ? err.message : "Unknown error";
+      return errorResponse(
+        { error: true, code: "PSI_ERROR", message: `PageSpeed Insights returned an error: ${message}` },
+        502
+      );
+    }
+
+    // 8. Shape + enrich with Next.js fixes
+    const shaped = shapePSIResponse(
+      psiData.raw as Record<string, unknown>,
+      url,
+      strategy,
+      psiData.fetchTimeMs
     );
+    const fixes = getFixesForAudits(shaped.failedAuditIds, shaped.savingsMap, shaped.auditItemsMap);
+    const passingChecks = getPassingChecks(shaped.passingAuditIds);
+
+    const result: AnalysisResult = {
+      url: shaped.url,
+      strategy: shaped.strategy,
+      performanceScore: shaped.performanceScore,
+      seoScore: shaped.seoScore,
+      accessibilityScore: shaped.accessibilityScore,
+      metrics: shaped.metrics,
+      fixes,
+      passingChecks,
+      cachedAt: shaped.cachedAt,
+      fromCache: false,
+      lighthouseVersion: shaped.lighthouseVersion,
+      fetchTimeMs: shaped.fetchTimeMs,
+    };
+
+    // 9. Cache + return
+    await setCached(key, result);
+    return NextResponse.json(result, {
+      headers: { "X-RateLimit-Remaining": String(rateLimit.remaining) },
+    });
+  } finally {
+    // Every exit path above releases the lock, including a throw from the
+    // shaping layer on a malformed PSI payload. Leaking it would 409 every
+    // request for this URL until the 65s TTL expired.
+    await releaseInflightLock(key);
   }
-
-  // 8. Shape + enrich with Next.js fixes
-  const shaped = shapePSIResponse(psiData.raw as Record<string, unknown>, url, strategy, psiData.fetchTimeMs);
-  const fixes = getFixesForAudits(shaped.failedAuditIds, shaped.savingsMap, shaped.auditItemsMap);
-  const passingChecks = getPassingChecks(shaped.passingAuditIds);
-
-  const result: AnalysisResult = {
-    url: shaped.url,
-    strategy: shaped.strategy,
-    performanceScore: shaped.performanceScore,
-    seoScore: shaped.seoScore,
-    accessibilityScore: shaped.accessibilityScore,
-    metrics: shaped.metrics,
-    fixes,
-    passingChecks,
-    cachedAt: shaped.cachedAt,
-    fromCache: false,
-    lighthouseVersion: shaped.lighthouseVersion,
-    fetchTimeMs: shaped.fetchTimeMs,
-  };
-
-  // 9. Cache, release lock, return
-  await setCached(key, result);
-  await releaseInflightLock(key);
-  return NextResponse.json(result);
 }

@@ -21,48 +21,38 @@ function ResultsContent() {
 
   useEffect(() => {
     const urlParam = params.get("url");
+    if (!urlParam) {
+      router.replace("/");
+      return;
+    }
+
     const strategyParam = (params.get("strategy") ?? "mobile") as "mobile" | "desktop";
 
-    let stored: AnalysisResult | null = null;
-    try {
-      const raw = sessionStorage.getItem("nextvital_result");
-      if (raw) stored = JSON.parse(raw) as AnalysisResult;
-    } catch {}
-
-    // Use stored result only when both URL and strategy match — opening a
-    // ?strategy=desktop link while a mobile result is cached would otherwise
-    // display mobile data under a desktop label.
-    if (
-      stored &&
-      stored.strategy === strategyParam &&
-      (!urlParam || stored.url === urlParam || stored.url === decodeURIComponent(urlParam))
-    ) {
-      setResult(stored);
-      return;
-    }
-
-    // Re-fetch if a URL param is present — shared links usually hit the cache
-    if (urlParam) {
-      fetch("/api/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: urlParam, strategy: strategyParam }),
+    // Always ask the API rather than handing the result over in sessionStorage.
+    // The audit that produced this link has already populated the Redis cache,
+    // so this is a cache hit that costs the caller no quota — and it means a
+    // shared link works for someone who never ran the audit.
+    let cancelled = false;
+    fetch("/api/analyze", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: urlParam, strategy: strategyParam }),
+    })
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message ?? "Something went wrong.");
+        return data as AnalysisResult;
       })
-        .then(async (res) => {
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.message ?? "Something went wrong.");
-          return data as AnalysisResult;
-        })
-        .then((data) => {
-          sessionStorage.setItem("nextvital_result", JSON.stringify(data));
-          setResult(data);
-        })
-        .catch((err: Error) => setLoadError(err.message ?? "Failed to load results."));
-      return;
-    }
+      .then((data) => {
+        if (!cancelled) setResult(data);
+      })
+      .catch((err: Error) => {
+        if (!cancelled) setLoadError(err.message ?? "Failed to load results.");
+      });
 
-    // No stored result, no URL param — go home
-    router.push("/");
+    return () => {
+      cancelled = true;
+    };
   }, [params, router]);
 
   if (loadError) {

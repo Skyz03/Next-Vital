@@ -1,0 +1,980 @@
+{
+  "loadingExperience": {
+    "id": "https://m.gsmarena.com/",
+    "metrics": {
+      "CUMULATIVE_LAYOUT_SHIFT_SCORE": {
+        "percentile": 1,
+        "distributions": [
+          {
+            "min": 0,
+            "max": 10,
+            "proportion": 0.8064
+          },
+          {
+            "min": 10,
+            "max": 25,
+            "proportion": 0.0108
+          },
+          {
+            "min": 25,
+            "proportion": 0.1828
+          }
+        ],
+        "category": "FAST"
+      },
+      "EXPERIMENTAL_TIME_TO_FIRST_BYTE": {
+        "percentile": 1579,
+        "distributions": [
+          {
+            "min": 0,
+            "max": 800,
+            "proportion": 0.5292
+          },
+          {
+            "min": 800,
+            "max": 1800,
+            "proportion": 0.2721
+          },
+          {
+            "min": 1800,
+            "proportion": 0.1987
+          }
+        ],
+        "category": "AVERAGE"
+      },
+      "FIRST_CONTENTFUL_PAINT_MS": {
+        "percentile": 1717,
+        "distributions": [
+          {
+            "min": 0,
+            "max": 1800,
+            "proportion": 0.7691
+          },
+          {
+            "min": 1800,
+            "max": 3000,
+            "proportion": 0.1488
+          },
+          {
+            "min": 3000,
+            "proportion": 0.0821
+          }
+        ],
+        "category": "FAST"
+      },
+      "INTERACTION_TO_NEXT_PAINT": {
+        "percentile": 150,
+        "distributions": [
+          {
+            "min": 0,
+            "max": 200,
+            "proportion": 0.8272
+          },
+          {
+            "min": 200,
+            "max": 500,
+            "proportion": 0.1309
+          },
+          {
+            "min": 500,
+            "proportion": 0.0419
+          }
+        ],
+        "category": "FAST"
+      },
+      "LARGEST_CONTENTFUL_PAINT_MS": {
+        "percentile": 2263,
+        "distributions": [
+          {
+            "min": 0,
+            "max": 2500,
+            "proportion": 0.7857
+          },
+          {
+            "min": 2500,
+            "max": 4000,
+            "proportion": 0.1281
+          },
+          {
+            "min": 4000,
+            "proportion": 0.0862
+          }
+        ],
+        "category": "FAST"
+      }
+    },
+    "overall_category": "AVERAGE"
+  },
+  "lighthouseResult": {
+    "requestedUrl": "https://www.gsmarena.com/",
+    "finalUrl": "https://m.gsmarena.com/",
+    "lighthouseVersion": "13.4.1",
+    "fetchTime": "2026-08-23T17:13:12.513Z",
+    "categories": {
+      "performance": {
+        "id": "performance",
+        "title": "Performance",
+        "score": 0.51
+      },
+      "accessibility": {
+        "id": "accessibility",
+        "title": "Accessibility",
+        "score": 0.68
+      },
+      "seo": {
+        "id": "seo",
+        "title": "SEO",
+        "score": 0.92
+      }
+    },
+    "audits": {
+      "image-delivery-insight": {
+        "id": "image-delivery-insight",
+        "title": "Improve image delivery",
+        "score": 0.5,
+        "scoreDisplayMode": "metricSavings",
+        "displayValue": "Est savings of 133 KiB",
+        "metricSavings": {
+          "LCP": 0,
+          "FCP": 0
+        },
+        "details": {
+          "type": "table",
+          "items": [
+            {
+              "url": "https://st.arenaev.com/news/26/08/byd-shows-third-generation-tang-suv/-344x215/arenaev_000.jpg",
+              "wastedBytes": 14586,
+              "totalBytes": 20450,
+              "node": {
+                "nodeLabel": "BYD showcases the third-generation Tang SUV",
+                "type": "node"
+              }
+            },
+            {
+              "url": "https://st.arenaev.com/news/26/08/tesla-semi-europe/-344x215/arenaev_000.jpg",
+              "wastedBytes": 13574,
+              "totalBytes": 19438,
+              "node": {
+                "nodeLabel": "Tesla Semi is coming to Europe, here's when",
+                "type": "node"
+              }
+            },
+            {
+              "url": "https://st.arenaev.com/news/25/09/tesla-robotaxis-in-austin-get-a-driver/-344x215/arenaev_000.jpg",
+              "wastedBytes": 12761,
+              "totalBytes": 18625,
+              "node": {
+                "nodeLabel": "Unsupervised Tesla Robotaxis numbers in Texas spike ahead of the Cybercab launch",
+                "type": "node"
+              }
+            },
+            {
+              "url": "https://st.gsmarena.com/imgroot/reviews/26/xiaomi-redmi-note-17-5g/hands-on/-347x151/thumb.jpg",
+              "wastedBytes": 10951,
+              "totalBytes": 19684,
+              "node": {
+                "nodeLabel": "Xiaomi Redmi Note 17 5G hands-on review",
+                "type": "node"
+              }
+            },
+            {
+              "url": "https://st.arenaev.com/news/22/11/volvo-ex90-vs-eqs-suv-580-vs-tesla-model-x-lr/-344x215/arenaev_001.jpg",
+              "wastedBytes": 9459,
+              "totalBytes": 15323,
+              "node": {
+                "nodeLabel": "Volvo EX90 alternatives - Mercedes EQS SUV 580 and Tesla Model X LR+",
+                "type": "node"
+              }
+            },
+            {
+              "url": "https://fdn2.gsmarena.com/vv/bigpic/nokia-300-charge.jpg",
+              "wastedBytes": 7164,
+              "totalBytes": 12817,
+              "node": {
+                "nodeLabel": "Nokia 300 Charge",
+                "type": "node"
+              }
+            }
+          ]
+        }
+      },
+      "render-blocking-insight": {
+        "id": "render-blocking-insight",
+        "title": "Render-blocking requests",
+        "score": 0,
+        "scoreDisplayMode": "metricSavings",
+        "displayValue": "Est savings of 1,390 ms",
+        "metricSavings": {
+          "LCP": 0,
+          "FCP": 1400
+        },
+        "details": {
+          "type": "table",
+          "items": [
+            {
+              "url": "https://fdn.gsmarena.com/vv/assets12/css/m/style2.css?v=143",
+              "totalBytes": 13774,
+              "wastedMs": 781
+            },
+            {
+              "url": "https://fdn.gsmarena.com/vv/assets12/css/m/index.css?v=3",
+              "totalBytes": 1869,
+              "wastedMs": 781
+            }
+          ]
+        }
+      },
+      "lcp-discovery-insight": {
+        "id": "lcp-discovery-insight",
+        "title": "LCP request discovery",
+        "score": 0,
+        "scoreDisplayMode": "numeric",
+        "metricSavings": {
+          "LCP": 0
+        },
+        "details": {
+          "type": "list",
+          "items": [
+            {},
+            {}
+          ]
+        }
+      },
+      "unused-javascript": {
+        "id": "unused-javascript",
+        "title": "Reduce unused JavaScript",
+        "score": 0,
+        "scoreDisplayMode": "metricSavings",
+        "numericValue": 4110,
+        "displayValue": "Est savings of 627 KiB",
+        "metricSavings": {
+          "LCP": 4100,
+          "FCP": 0
+        },
+        "details": {
+          "type": "opportunity",
+          "overallSavingsMs": 4110,
+          "items": [
+            {
+              "url": "https://cdn.intergient.com/prebid/prebid.bf15e0c7dc6ef200da0f.js",
+              "wastedBytes": 199221,
+              "totalBytes": 231981
+            },
+            {
+              "url": "https://securepubads.g.doubleclick.net/pagead/managed/js/gpt/m202608180101/pubads_impl.js",
+              "wastedBytes": 148572,
+              "totalBytes": 207594
+            },
+            {
+              "url": "https://cdn.intergient.com/pageos/V.20260819.1/pageos.js",
+              "wastedBytes": 136024,
+              "totalBytes": 192597
+            },
+            {
+              "url": "https://www.googletagmanager.com/gtag/js?id=G-T41Y7J4EWG",
+              "wastedBytes": 68809,
+              "totalBytes": 159709
+            },
+            {
+              "url": "https://c.amazon-adsystem.com/aax2/apstag.js",
+              "wastedBytes": 53555,
+              "totalBytes": 94733
+            },
+            {
+              "url": "https://fundingchoicesmessages.google.com/i/154013155?ers=3",
+              "wastedBytes": 35746,
+              "totalBytes": 70297
+            }
+          ]
+        }
+      },
+      "document-latency-insight": {
+        "id": "document-latency-insight",
+        "title": "Document request latency",
+        "score": 0,
+        "scoreDisplayMode": "metricSavings",
+        "displayValue": "Est savings of 1,360 ms",
+        "metricSavings": {
+          "LCP": 1350,
+          "FCP": 1350
+        },
+        "details": {
+          "type": "checklist"
+        }
+      },
+      "server-response-time": {
+        "id": "server-response-time",
+        "title": "Initial server response time was short",
+        "score": 1,
+        "scoreDisplayMode": "metricSavings",
+        "numericValue": 1,
+        "displayValue": "Root document took 0 ms",
+        "metricSavings": {
+          "LCP": 0,
+          "FCP": 0
+        },
+        "details": {
+          "type": "opportunity",
+          "overallSavingsMs": 0,
+          "items": [
+            {
+              "url": "https://m.gsmarena.com/"
+            }
+          ]
+        }
+      },
+      "cls-culprits-insight": {
+        "id": "cls-culprits-insight",
+        "title": "Layout shift culprits",
+        "score": 1,
+        "scoreDisplayMode": "informative",
+        "metricSavings": {
+          "CLS": 0
+        },
+        "details": {
+          "type": "list",
+          "items": [
+            {}
+          ]
+        }
+      },
+      "legacy-javascript-insight": {
+        "id": "legacy-javascript-insight",
+        "title": "Legacy JavaScript",
+        "score": 0,
+        "scoreDisplayMode": "metricSavings",
+        "displayValue": "Est savings of 44 KiB",
+        "metricSavings": {
+          "LCP": 50,
+          "FCP": 0
+        },
+        "details": {
+          "type": "table",
+          "items": [
+            {
+              "url": "https://cdn.intergient.com/pageos/V.20260819.1/pageos.js",
+              "wastedBytes": 16104
+            },
+            {
+              "url": "https://secure.cdn.fastclick.net/js/pubcid/latest/pubcid.min.js",
+              "wastedBytes": 15626
+            },
+            {
+              "url": "https://static.criteo.net/js/ld/publishertag.ids.js",
+              "wastedBytes": 13160
+            }
+          ]
+        }
+      },
+      "duplicated-javascript-insight": {
+        "id": "duplicated-javascript-insight",
+        "title": "Duplicated JavaScript",
+        "score": 1,
+        "scoreDisplayMode": "metricSavings",
+        "metricSavings": {
+          "LCP": 0,
+          "FCP": 0
+        },
+        "details": {
+          "type": "table",
+          "items": []
+        }
+      },
+      "cache-insight": {
+        "id": "cache-insight",
+        "title": "Use efficient cache lifetimes",
+        "score": 0,
+        "scoreDisplayMode": "metricSavings",
+        "displayValue": "Est savings of 182 KiB",
+        "metricSavings": {
+          "LCP": 400,
+          "FCP": 0
+        },
+        "details": {
+          "type": "table",
+          "items": [
+            {
+              "url": "https://c.amazon-adsystem.com/aax2/apstag.js",
+              "wastedBytes": 76332,
+              "totalBytes": 95415
+            },
+            {
+              "url": "https://cdn.id5-sync.com/api/1.0/id5-api.js",
+              "wastedBytes": 28356,
+              "totalBytes": 35445
+            },
+            {
+              "url": "https://secure.cdn.fastclick.net/js/pubcid/latest/pubcid.min.js",
+              "wastedBytes": 19965.48125,
+              "totalBytes": 22339
+            },
+            {
+              "url": "https://script-api.ccgateway.net/script/bundle?id=m.gsmarena.com&parentId=5bb3e20859",
+              "wastedBytes": 14693.366666666667,
+              "totalBytes": 16634
+            },
+            {
+              "url": "https://connectid.analytics.yahoo.com/connectId-gpt.js",
+              "wastedBytes": 7508.8,
+              "totalBytes": 9386
+            },
+            {
+              "url": "https://static.criteo.net/js/ld/publishertag.ids.js",
+              "wastedBytes": 5673.200000000001,
+              "totalBytes": 14183
+            }
+          ]
+        }
+      },
+      "third-parties-insight": {
+        "id": "third-parties-insight",
+        "title": "3rd parties",
+        "score": 1,
+        "scoreDisplayMode": "informative",
+        "details": {
+          "type": "table",
+          "items": [
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        }
+      },
+      "network-dependency-tree-insight": {
+        "id": "network-dependency-tree-insight",
+        "title": "Network dependency tree",
+        "score": 0,
+        "scoreDisplayMode": "numeric",
+        "metricSavings": {
+          "LCP": 0
+        },
+        "details": {
+          "type": "list",
+          "items": [
+            {},
+            {},
+            {}
+          ]
+        }
+      },
+      "font-display-insight": {
+        "id": "font-display-insight",
+        "title": "Font display",
+        "score": 0,
+        "scoreDisplayMode": "metricSavings",
+        "displayValue": "Est savings of 310 ms",
+        "metricSavings": {
+          "FCP": 300,
+          "INP": 0
+        },
+        "details": {
+          "type": "table",
+          "items": [
+            {
+              "url": "https://fdn.gsmarena.com/imgroot/css/fonts/gsmarena/arimo/Alt-Arimo-Bold.woff2",
+              "wastedMs": 310
+            },
+            {
+              "url": "https://fdn.gsmarena.com/imgroot/css/fonts/gsmarena/oswald/Alt-Oswald-Light.woff2",
+              "wastedMs": 305
+            },
+            {
+              "url": "https://fdn.gsmarena.com/imgroot/css/fonts/gsmarena/arimo/Alt-Arimo-Regular.woff2",
+              "wastedMs": 40
+            },
+            {
+              "url": "https://fdn.gsmarena.com/imgroot/css/fonts/gsmarena/icons/gsmarena.woff?2026-january-21",
+              "wastedMs": 20
+            },
+            {
+              "url": "https://fdn.gsmarena.com/imgroot/css/fonts/gsmarena/oswald/Alt-Oswald-Regular.woff2",
+              "wastedMs": 20
+            }
+          ]
+        }
+      },
+      "unsized-images": {
+        "id": "unsized-images",
+        "title": "Image elements have explicit `width` and `height`",
+        "score": 1,
+        "scoreDisplayMode": "metricSavings",
+        "metricSavings": {
+          "CLS": 0
+        },
+        "details": {
+          "type": "table",
+          "items": []
+        }
+      },
+      "dom-size-insight": {
+        "id": "dom-size-insight",
+        "title": "Optimize DOM size",
+        "score": 1,
+        "scoreDisplayMode": "numeric",
+        "numericValue": 526,
+        "metricSavings": {
+          "INP": 0
+        },
+        "details": {
+          "type": "table",
+          "items": [
+            {},
+            {
+              "node": {
+                "nodeLabel": "Huawei Pura X View",
+                "type": "node"
+              }
+            },
+            {
+              "node": {
+                "nodeLabel": "FEATURED\nWeekly poll: would you buy the Honor Robot Phone and why?\nvivo V70 Lit…",
+                "type": "node"
+              }
+            }
+          ]
+        }
+      },
+      "bootup-time": {
+        "id": "bootup-time",
+        "title": "JavaScript execution time",
+        "score": 1,
+        "scoreDisplayMode": "metricSavings",
+        "numericValue": 1127.2044000000003,
+        "displayValue": "1.1 s",
+        "metricSavings": {
+          "TBT": 500
+        },
+        "details": {
+          "type": "table",
+          "items": [
+            {
+              "url": "Unattributable"
+            },
+            {
+              "url": "https://cdn.intergient.com/pageos/V.20260819.1/pageos.js"
+            },
+            {
+              "url": "https://www.googletagmanager.com/gtag/js?id=G-T41Y7J4EWG"
+            },
+            {
+              "url": "https://fundingchoicesmessages.google.com/i/154013155?ers=3"
+            },
+            {
+              "url": "https://m.gsmarena.com/"
+            },
+            {
+              "url": "https://securepubads.g.doubleclick.net/pagead/managed/js/gpt/m202608180101/pubads_impl.js"
+            }
+          ]
+        }
+      },
+      "long-tasks": {
+        "id": "long-tasks",
+        "title": "Avoid long main-thread tasks",
+        "score": 1,
+        "scoreDisplayMode": "informative",
+        "displayValue": "9 long tasks found",
+        "metricSavings": {
+          "TBT": 450
+        },
+        "details": {
+          "type": "table",
+          "items": [
+            {
+              "url": "https://fundingchoicesmessages.google.com/i/154013155?ers=3"
+            },
+            {
+              "url": "https://securepubads.g.doubleclick.net/pagead/managed/js/gpt/m202608180101/pubads_impl.js"
+            },
+            {
+              "url": "https://cdn.intergient.com/prebid/prebid.bf15e0c7dc6ef200da0f.js"
+            },
+            {
+              "url": "https://www.googletagmanager.com/gtag/js?id=G-T41Y7J4EWG"
+            },
+            {
+              "url": "https://c.amazon-adsystem.com/aax2/apstag.js"
+            },
+            {
+              "url": "https://www.googletagmanager.com/gtag/js?id=G-T41Y7J4EWG"
+            }
+          ]
+        }
+      },
+      "redirects": {
+        "id": "redirects",
+        "title": "Avoid multiple page redirects",
+        "score": 0,
+        "scoreDisplayMode": "metricSavings",
+        "numericValue": 780,
+        "displayValue": "Est savings of 780 ms",
+        "metricSavings": {
+          "LCP": 800,
+          "FCP": 800
+        },
+        "details": {
+          "type": "opportunity",
+          "overallSavingsMs": 780,
+          "items": [
+            {
+              "url": "https://www.gsmarena.com/",
+              "wastedMs": 780
+            },
+            {
+              "url": "https://m.gsmarena.com/",
+              "wastedMs": 0
+            }
+          ]
+        }
+      },
+      "unused-css-rules": {
+        "id": "unused-css-rules",
+        "title": "Reduce unused CSS",
+        "score": 1,
+        "scoreDisplayMode": "metricSavings",
+        "numericValue": 0,
+        "metricSavings": {
+          "LCP": 0,
+          "FCP": 0
+        },
+        "details": {
+          "type": "opportunity",
+          "overallSavingsMs": 0,
+          "items": []
+        }
+      },
+      "forced-reflow-insight": {
+        "id": "forced-reflow-insight",
+        "title": "Forced reflow",
+        "score": 1,
+        "scoreDisplayMode": "numeric",
+        "details": {
+          "type": "list",
+          "items": [
+            {}
+          ]
+        }
+      },
+      "total-byte-weight": {
+        "id": "total-byte-weight",
+        "title": "Avoids enormous network payloads",
+        "score": 1,
+        "scoreDisplayMode": "metricSavings",
+        "numericValue": 1976764,
+        "displayValue": "Total size was 1,930 KiB",
+        "details": {
+          "type": "table",
+          "items": [
+            {
+              "url": "https://cdn.intergient.com/prebid/prebid.bf15e0c7dc6ef200da0f.js",
+              "totalBytes": 232443
+            },
+            {
+              "url": "https://securepubads.g.doubleclick.net/pagead/managed/js/gpt/m202608180101/pubads_impl.js",
+              "totalBytes": 208431
+            },
+            {
+              "url": "https://cdn.intergient.com/pageos/V.20260819.1/pageos.js",
+              "totalBytes": 193085
+            },
+            {
+              "url": "https://www.googletagmanager.com/gtag/js?id=G-T41Y7J4EWG",
+              "totalBytes": 160394
+            },
+            {
+              "url": "https://c.amazon-adsystem.com/aax2/apstag.js",
+              "totalBytes": 95415
+            },
+            {
+              "url": "https://fundingchoicesmessages.google.com/i/154013155?ers=3",
+              "totalBytes": 72223
+            }
+          ]
+        }
+      },
+      "document-title": {
+        "id": "document-title",
+        "title": "Document has a `<title>` element",
+        "score": 1,
+        "scoreDisplayMode": "binary",
+        "details": {
+          "type": "table",
+          "items": []
+        }
+      },
+      "meta-description": {
+        "id": "meta-description",
+        "title": "Document has a meta description",
+        "score": 1,
+        "scoreDisplayMode": "binary"
+      },
+      "html-has-lang": {
+        "id": "html-has-lang",
+        "title": "`<html>` element has a `[lang]` attribute",
+        "score": 1,
+        "scoreDisplayMode": "binary",
+        "details": {
+          "type": "table",
+          "items": []
+        }
+      },
+      "canonical": {
+        "id": "canonical",
+        "title": "Document has a valid `rel=canonical`",
+        "score": 1,
+        "scoreDisplayMode": "binary"
+      },
+      "robots-txt": {
+        "id": "robots-txt",
+        "title": "robots.txt is valid",
+        "score": 1,
+        "scoreDisplayMode": "binary",
+        "details": {
+          "type": "table",
+          "items": []
+        }
+      },
+      "is-crawlable": {
+        "id": "is-crawlable",
+        "title": "Page isn’t blocked from indexing",
+        "score": 1,
+        "scoreDisplayMode": "binary",
+        "details": {
+          "type": "table",
+          "items": []
+        }
+      },
+      "crawlable-anchors": {
+        "id": "crawlable-anchors",
+        "title": "Links are crawlable",
+        "score": 1,
+        "scoreDisplayMode": "binary",
+        "details": {
+          "type": "table",
+          "items": []
+        }
+      },
+      "link-text": {
+        "id": "link-text",
+        "title": "Links do not have descriptive text",
+        "score": 0,
+        "scoreDisplayMode": "binary",
+        "displayValue": "1 link found",
+        "details": {
+          "type": "table",
+          "items": [
+            {}
+          ]
+        }
+      },
+      "hreflang": {
+        "id": "hreflang",
+        "title": "Document has a valid `hreflang`",
+        "score": 1,
+        "scoreDisplayMode": "binary",
+        "details": {
+          "type": "table",
+          "items": []
+        }
+      },
+      "meta-viewport": {
+        "id": "meta-viewport",
+        "title": "`[user-scalable=\"no\"]` is used in the `<meta name=\"viewport\">` element or the `[maximum-scale]` attribute is less than 5.",
+        "score": 0,
+        "scoreDisplayMode": "binary",
+        "details": {
+          "type": "table",
+          "items": [
+            {
+              "node": {
+                "nodeLabel": "head > meta",
+                "type": "node"
+              }
+            }
+          ]
+        }
+      },
+      "image-alt": {
+        "id": "image-alt",
+        "title": "Image elements have `[alt]` attributes",
+        "score": 1,
+        "scoreDisplayMode": "binary",
+        "details": {
+          "type": "table",
+          "items": []
+        }
+      },
+      "color-contrast": {
+        "id": "color-contrast",
+        "title": "Background and foreground colors do not have a sufficient contrast ratio.",
+        "score": 0,
+        "scoreDisplayMode": "binary",
+        "details": {
+          "type": "table",
+          "items": [
+            {
+              "node": {
+                "nodeLabel": "HOME",
+                "type": "node"
+              }
+            },
+            {
+              "node": {
+                "nodeLabel": "NEWS",
+                "type": "node"
+              }
+            },
+            {
+              "node": {
+                "nodeLabel": "REVIEWS",
+                "type": "node"
+              }
+            },
+            {
+              "node": {
+                "nodeLabel": "VIDEOS",
+                "type": "node"
+              }
+            },
+            {
+              "node": {
+                "nodeLabel": "HOME",
+                "type": "node"
+              }
+            },
+            {
+              "node": {
+                "nodeLabel": "NEWS",
+                "type": "node"
+              }
+            }
+          ]
+        }
+      },
+      "link-name": {
+        "id": "link-name",
+        "title": "Links do not have a discernible name",
+        "score": 0,
+        "scoreDisplayMode": "binary",
+        "details": {
+          "type": "table",
+          "items": [
+            {
+              "node": {
+                "nodeLabel": "GSMArena.com",
+                "type": "node"
+              }
+            },
+            {
+              "node": {
+                "nodeLabel": "header#header > div.header-top-bar > span.user-login > a#header-login-b",
+                "type": "node"
+              }
+            },
+            {
+              "node": {
+                "nodeLabel": "header#header > div.header-top-bar > span.user-login > a",
+                "type": "node"
+              }
+            },
+            {
+              "node": {
+                "nodeLabel": "div.drawer > ul.social > li > a",
+                "type": "node"
+              }
+            },
+            {
+              "node": {
+                "nodeLabel": "div.drawer > ul.social > li > a",
+                "type": "node"
+              }
+            },
+            {
+              "node": {
+                "nodeLabel": "div.drawer > ul.social > li > a",
+                "type": "node"
+              }
+            }
+          ]
+        }
+      },
+      "button-name": {
+        "id": "button-name",
+        "title": "Buttons have an accessible name",
+        "score": null,
+        "scoreDisplayMode": "notApplicable"
+      },
+      "heading-order": {
+        "id": "heading-order",
+        "title": "Heading elements appear in a sequentially-descending order",
+        "score": 1,
+        "scoreDisplayMode": "binary",
+        "details": {
+          "type": "table",
+          "items": []
+        }
+      },
+      "target-size": {
+        "id": "target-size",
+        "title": "Touch targets have sufficient size and spacing.",
+        "score": 1,
+        "scoreDisplayMode": "binary",
+        "details": {
+          "type": "table",
+          "items": []
+        }
+      },
+      "html-lang-valid": {
+        "id": "html-lang-valid",
+        "title": "`<html>` element has a valid value for its `[lang]` attribute",
+        "score": 1,
+        "scoreDisplayMode": "binary",
+        "details": {
+          "type": "table",
+          "items": []
+        }
+      },
+      "largest-contentful-paint": {
+        "id": "largest-contentful-paint",
+        "title": "Largest Contentful Paint",
+        "score": 0,
+        "scoreDisplayMode": "numeric",
+        "numericValue": 14730.279376708344,
+        "displayValue": "14.7 s"
+      },
+      "cumulative-layout-shift": {
+        "id": "cumulative-layout-shift",
+        "title": "Cumulative Layout Shift",
+        "score": 1,
+        "scoreDisplayMode": "numeric",
+        "numericValue": 0.0001279444665337163,
+        "displayValue": "0",
+        "details": {
+          "type": "debugdata",
+          "items": [
+            {}
+          ]
+        }
+      },
+      "first-contentful-paint": {
+        "id": "first-contentful-paint",
+        "title": "First Contentful Paint",
+        "score": 0.63,
+        "scoreDisplayMode": "numeric",
+        "numericValue": 2623.385989201335,
+        "displayValue": "2.6 s"
+      },
+      "total-blocking-time": {
+        "id": "total-blocking-time",
+        "title": "Total Blocking Time",
+        "score": 0.61,
+        "scoreDisplayMode": "numeric",
+        "numericValue": 465.5,
+        "displayValue": "470 ms"
+      }
+    }
+  }
+}
