@@ -6,6 +6,7 @@ import type { AnalysisResult } from "@/types/analysis";
 import ScoreRing from "@/components/ScoreRing";
 import MetricCard from "@/components/MetricCard";
 import FixCard from "@/components/FixCard";
+import AiPanel from "@/components/AiPanel";
 
 const CATEGORY_META = {
   performance: { label: "Performance" },
@@ -186,6 +187,8 @@ function ResultsContent() {
             </div>
           </section>
         )}
+
+        <AiPanel result={result} />
 
       </div>
     </main>

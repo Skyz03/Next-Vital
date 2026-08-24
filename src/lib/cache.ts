@@ -8,6 +8,8 @@ const redis = new Redis({
 const TTL_SECONDS = 60 * 60 * 24; // 24 hours
 const RATE_LIMIT_WINDOW = 60 * 60; // 1 hour
 const RATE_LIMIT_MAX = 5;
+const AI_RATE_LIMIT_WINDOW = 60 * 60; // 1 hour
+const AI_RATE_LIMIT_MAX = 60;
 const DAILY_PSI_CAP = 500;
 const INFLIGHT_TTL = 65; // slightly longer than the 40s PSI timeout + route maxDuration buffer
 
@@ -16,8 +18,18 @@ export function cacheKey(url: string, strategy: string): string {
   return `analysis:${strategy}:${encoded}`;
 }
 
+export interface RateLimitResult {
+  allowed: boolean;
+  remaining: number;
+  retryAfter: number;
+}
+
 export function rateLimitKey(ip: string): string {
   return `ratelimit:${ip}`;
+}
+
+export function aiRateLimitKey(ip: string): string {
+  return `ai:ratelimit:${ip}`;
 }
 
 export async function getCached(key: string): Promise<unknown | null> {
@@ -51,25 +63,39 @@ export async function checkDailyCap(): Promise<boolean> {
 // The NX option on EXPIRE sets the TTL only if the key has no expiry yet,
 // which prevents resetting the window on every request and eliminates the
 // INCR/EXPIRE race where a crash between the two calls leaves the key immortal.
-export async function checkRateLimit(
-  ip: string
-): Promise<{ allowed: boolean; remaining: number; retryAfter: number }> {
+async function incrementWindow(
+  key: string,
+  windowSeconds: number,
+  max: number
+): Promise<RateLimitResult> {
   try {
-    const key = rateLimitKey(ip);
     const pipeline = redis.pipeline();
     pipeline.incr(key);
-    pipeline.expire(key, RATE_LIMIT_WINDOW, "NX");
+    pipeline.expire(key, windowSeconds, "NX");
     const results = await pipeline.exec();
     const count = results[0] as number;
     const ttl = await redis.ttl(key);
     return {
-      allowed: count <= RATE_LIMIT_MAX,
-      remaining: Math.max(0, RATE_LIMIT_MAX - count),
-      retryAfter: ttl > 0 ? ttl : RATE_LIMIT_WINDOW,
+      allowed: count <= max,
+      remaining: Math.max(0, max - count),
+      retryAfter: ttl > 0 ? ttl : windowSeconds,
     };
   } catch {
-    return { allowed: true, remaining: RATE_LIMIT_MAX, retryAfter: 0 };
+    return { allowed: true, remaining: max, retryAfter: 0 };
   }
+}
+
+/** The PSI audit quota — each call spends a Google API request. */
+export async function checkRateLimit(ip: string): Promise<RateLimitResult> {
+  return incrementWindow(rateLimitKey(ip), RATE_LIMIT_WINDOW, RATE_LIMIT_MAX);
+}
+
+// A separate, much looser budget for the AI routes. These spend the *caller's*
+// tokens, not ours, so the limit is not about cost — it exists so the proxy
+// cannot be driven as a general-purpose LLM relay. Reusing the 5/hour PSI quota
+// here would strand a user after their first chat exchange.
+export async function checkAiRateLimit(ip: string): Promise<RateLimitResult> {
+  return incrementWindow(aiRateLimitKey(ip), AI_RATE_LIMIT_WINDOW, AI_RATE_LIMIT_MAX);
 }
 
 // In-flight lock: prevents two concurrent requests for the same URL from both
