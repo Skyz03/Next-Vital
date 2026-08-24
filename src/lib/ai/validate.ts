@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { UrlSchema } from "@/lib/validate";
-import { PROVIDER_IDS } from "./providers";
+import { PROXY_PROVIDER_IDS } from "./providers";
 
 const ChatMessageSchema = z.object({
   role: z.enum(["user", "assistant"]),
@@ -14,7 +14,9 @@ const ChatMessageSchema = z.object({
  */
 export const ExplainSchema = UrlSchema.extend({
   mode: z.enum(["plan", "chat"]).default("plan"),
-  provider: z.enum(PROVIDER_IDS as [string, ...string[]]),
+  // Only proxied providers are accepted. A "local" request has no business
+  // reaching this server: the endpoint is on the caller's own machine.
+  provider: z.enum(PROXY_PROVIDER_IDS as [string, ...string[]]),
   model: z.string().min(1, "Model is required").max(120),
   // Capped so the proxy cannot be used to relay an unbounded conversation.
   messages: z.array(ChatMessageSchema).max(20, "Conversation is too long").optional(),

@@ -62,20 +62,67 @@ describe("streamCompletion error mapping", () => {
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.code).toBe("PROVIDER_ERROR");
-      expect(result.message).toContain("nonexistent not found");
+      expect(result.message).toContain("model: nonexistent not found");
     }
   });
 
-  it("never echoes the caller's key back, even when the provider does", async () => {
-    // Some providers quote the offending credential in their error body.
+  it("scrubs the key out of an echoed provider error", async () => {
+    // Some providers quote the offending credential back in their error body.
+    // A 500 keeps the detail in the message, so this proves the scrub itself
+    // rather than the auth path that replaces the text wholesale.
     vi.mocked(fetch).mockResolvedValue(
-      new Response(`invalid api key: ${KEY}`, { status: 400 })
+      new Response(`upstream failure for credential ${KEY}`, { status: 500 })
     );
     const result = await streamCompletion(base());
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.message).not.toContain(KEY);
       expect(result.message).toContain("[redacted]");
+    }
+  });
+
+  it("never leaks the key on the auth path either", async () => {
+    vi.mocked(fetch).mockResolvedValue(new Response(`invalid api key: ${KEY}`, { status: 401 }));
+    const result = await streamCompletion(base());
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.message).not.toContain(KEY);
+  });
+
+  it("treats Gemini's 400-for-a-bad-key as an auth failure", async () => {
+    // Gemini answers an invalid key with 400, not 401. Status alone would hand
+    // the user a generic "provider error" for the one thing they can fix.
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(
+        JSON.stringify({ error: { code: 400, message: "API key not valid. Pass a valid API key." } }),
+        { status: 400 }
+      )
+    );
+    const result = await streamCompletion(base({ provider: "gemini", model: "gemini-3.7-flash" }));
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.code).toBe("PROVIDER_AUTH");
+      expect(result.message).toContain("rejected that API key");
+    }
+  });
+
+  it("does not mistake an unrelated 400 for an auth failure", async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(JSON.stringify({ error: { message: "contents is required" } }), { status: 400 })
+    );
+    const result = await streamCompletion(base({ provider: "gemini" }));
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.code).toBe("PROVIDER_ERROR");
+  });
+
+  it("unwraps the provider message instead of echoing raw JSON", async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(JSON.stringify({ error: { message: "credit balance too low" } }), { status: 402 })
+    );
+    const result = await streamCompletion(base());
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.message).toContain("credit balance too low");
+      expect(result.message).not.toContain("{");
     }
   });
 

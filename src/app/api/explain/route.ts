@@ -1,11 +1,11 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { normalizeUrl } from "@/lib/validate";
 import { cacheKey, getCached, checkAiRateLimit } from "@/lib/cache";
-import { streamCompletion } from "@/lib/ai";
+import { streamCompletion, type ProxyProviderId } from "@/lib/ai";
 import { ExplainSchema } from "@/lib/ai/validate";
-import { buildSystemPrompt, PLAN_USER_TURN } from "@/lib/ai/prompt";
+import { buildSystemPrompt, openOnUserTurn, PLAN_USER_TURN } from "@/lib/ai/prompt";
 import type { AnalysisResult } from "@/types/analysis";
-import type { AiError, AiProviderId, ChatMessage } from "@/types/ai";
+import type { AiError, ChatMessage } from "@/types/ai";
 
 export const maxDuration = 60;
 
@@ -98,10 +98,10 @@ export async function POST(req: NextRequest) {
   // "plan" discards any caller-supplied turns so the action plan is always
   // generated from the same fixed prompt.
   const turns: ChatMessage[] =
-    mode === "plan" ? [{ role: "user", content: PLAN_USER_TURN }] : messages ?? [];
+    mode === "plan" ? [{ role: "user", content: PLAN_USER_TURN }] : openOnUserTurn(messages ?? []);
 
   const result = await streamCompletion({
-    provider: provider as AiProviderId,
+    provider: provider as ProxyProviderId,
     key,
     model,
     system: buildSystemPrompt(cached),

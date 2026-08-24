@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { AnalysisResult } from "@/types/analysis";
 import type { AiMode, ChatMessage } from "@/types/ai";
+import { streamAnswer } from "@/lib/ai/client";
 import {
   subscribeCreds,
   getCredsSnapshot,
@@ -14,6 +15,9 @@ import {
 import { PROVIDERS } from "@/lib/ai/providers";
 import AiSettings from "./AiSettings";
 import Markdown from "./Markdown";
+
+// Mirrors the cap enforced by ExplainSchema on the server.
+const MAX_TURNS = 20;
 
 interface Props {
   result: AnalysisResult;
@@ -43,37 +47,16 @@ export default function AiPanel({ result }: Props) {
     if (!creds) return;
     const controller = new AbortController();
     abortRef.current = controller;
-
-    const res = await fetch("/api/explain", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        // Header rather than body — see the comment in the route handler.
-        "X-Provider-Key": creds.key,
-      },
-      body: JSON.stringify({
-        url: result.url,
-        strategy: result.strategy,
-        mode,
-        provider: creds.provider,
-        model: creds.model,
-        messages,
-      }),
+    // streamAnswer picks the transport: hosted providers go through
+    // /api/explain, a local runtime is called straight from the browser.
+    for await (const chunk of streamAnswer({
+      result,
+      creds,
+      mode,
+      messages,
       signal: controller.signal,
-    });
-
-    if (!res.ok) {
-      const data = await res.json().catch(() => null);
-      throw new Error(data?.message ?? "Something went wrong.");
-    }
-    if (!res.body) throw new Error("The server returned an empty response.");
-
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder();
-    while (true) {
-      const { value, done } = await reader.read();
-      if (done) break;
-      onDelta(decoder.decode(value, { stream: true }));
+    })) {
+      onDelta(chunk);
     }
   }
 
@@ -100,11 +83,18 @@ export default function AiPanel({ result }: Props) {
     setBusy(true);
 
     // The plan is the opening assistant turn so follow-ups can refer to it.
-    const history: ChatMessage[] = [
+    const full: ChatMessage[] = [
       ...(plan ? ([{ role: "assistant", content: plan }] as ChatMessage[]) : []),
       ...chat,
       { role: "user", content: question },
     ];
+    // The route caps a conversation at MAX_TURNS. Trim here rather than letting
+    // a long chat fail with a validation error the user cannot act on: keep the
+    // plan as the anchor and drop the oldest follow-ups.
+    const history =
+      full.length <= MAX_TURNS
+        ? full
+        : [full[0], ...full.slice(full.length - (MAX_TURNS - 1))];
     setChat((c) => [...c, { role: "user", content: question }, { role: "assistant", content: "" }]);
 
     try {
@@ -173,9 +163,9 @@ export default function AiPanel({ result }: Props) {
             Turn this report into a prioritised plan, and ask follow-up questions.
           </p>
           <p className="text-xs text-[var(--text-2)] leading-relaxed max-w-md mx-auto">
-            Bring your own Anthropic or OpenRouter API key. It stays in your browser and is
-            used only for your requests — OpenRouter has free models if you would rather not
-            spend anything.
+            Connect Anthropic, Google Gemini or OpenRouter with your own API key — or point it at
+            a model running locally on your machine, which needs no key and no account at all.
+            Gemini keys are free, and nothing you connect is stored on our side.
           </p>
           <button
             onClick={() => setShowSettings(true)}

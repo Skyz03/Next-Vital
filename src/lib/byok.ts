@@ -3,8 +3,11 @@ import { PROVIDERS, isProviderId } from "@/lib/ai/providers";
 
 export interface StoredCreds {
   provider: AiProviderId;
+  /** Empty for providers that need no credential, i.e. a local runtime. */
   key: string;
   model: string;
+  /** Local runtimes only — where the OpenAI-compatible endpoint lives. */
+  baseUrl?: string;
 }
 
 const STORAGE_KEY = "nextvital_ai_v1";
@@ -40,16 +43,20 @@ function parse(raw: string | null): StoredCreds | null {
   try {
     const value: unknown = JSON.parse(raw);
     if (typeof value !== "object" || value === null) return null;
-    const { provider, key, model } = value as Record<string, unknown>;
+    const { provider, key, model, baseUrl } = value as Record<string, unknown>;
     // Guard the shape: an entry written by an older version should read as
-    // "no key configured" rather than produce a malformed request.
+    // "not configured" rather than produce a malformed request.
     if (!isProviderId(provider)) return null;
-    if (typeof key !== "string" || key.length === 0) return null;
+    const resolvedKey = typeof key === "string" ? key : "";
+    // A local runtime needs no credential, so an empty key is only a problem
+    // for the hosted providers.
+    if (PROVIDERS[provider].requiresKey && resolvedKey.length === 0) return null;
     return {
       provider,
-      key,
+      key: resolvedKey,
       model:
         typeof model === "string" && model.length > 0 ? model : PROVIDERS[provider].defaultModel,
+      baseUrl: typeof baseUrl === "string" && baseUrl.length > 0 ? baseUrl : undefined,
     };
   } catch {
     return null;

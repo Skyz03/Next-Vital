@@ -1,8 +1,20 @@
 import type { AnalysisResult, AuditItem, CoreMetric, NextjsFix } from "@/types/analysis";
+import type { ChatMessage } from "@/types/ai";
 
 export const PLAN_USER_TURN =
   "Using only the audit data above, give me a prioritised action plan for this site. " +
   "Lead with the single highest-impact change. Cover at most four items.";
+
+/**
+ * Every provider here requires a conversation to open on a user turn. The
+ * client sends the action plan as the opening assistant message so follow-ups
+ * can refer to it, so restore the request that produced that plan and keep the
+ * exchange truthful.
+ */
+export function openOnUserTurn(messages: ChatMessage[]): ChatMessage[] {
+  if (messages[0]?.role !== "assistant") return messages;
+  return [{ role: "user", content: PLAN_USER_TURN }, ...messages];
+}
 
 function formatBytes(bytes: number): string {
   if (bytes >= 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`;

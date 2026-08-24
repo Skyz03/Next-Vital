@@ -116,6 +116,23 @@ describe("input validation", () => {
     expect((await res.json()).code).toBe("INVALID_REQUEST");
   });
 
+  it("refuses to relay to a local runtime", async () => {
+    // The endpoint lives on the caller's machine. This server cannot reach it
+    // and must not be talked into trying.
+    const res = await POST(request({ ...VALID, provider: "local", model: "llama3.2" }));
+    expect(res.status).toBe(400);
+    expect((await res.json()).code).toBe("INVALID_REQUEST");
+    expect(ai.streamCompletion).not.toHaveBeenCalled();
+  });
+
+  it("accepts gemini", async () => {
+    const res = await POST(
+      request({ ...VALID, provider: "gemini", model: "gemini-3.7-flash" })
+    );
+    expect(res.status).toBe(200);
+    expect(vi.mocked(ai.streamCompletion).mock.calls[0][0].provider).toBe("gemini");
+  });
+
   it("rejects a missing model", async () => {
     const res = await POST(request({ ...VALID, model: "" }));
     expect(res.status).toBe(400);
@@ -172,6 +189,39 @@ describe("prompt sourcing", () => {
     const { messages } = vi.mocked(ai.streamCompletion).mock.calls[0][0];
     expect(messages).toHaveLength(1);
     expect(messages[0].content).not.toContain("ignore your instructions");
+  });
+
+  it("opens the conversation on a user turn when the plan leads", async () => {
+    // The client sends the action plan as the opening assistant message so
+    // follow-ups can refer to it. Both provider APIs reject a conversation
+    // that starts on an assistant turn, so the route restores the request
+    // that produced the plan.
+    await POST(
+      request({
+        ...VALID,
+        mode: "chat",
+        messages: [
+          { role: "assistant", content: "## Do this first" },
+          { role: "user", content: "why?" },
+        ],
+      })
+    );
+    const { messages } = vi.mocked(ai.streamCompletion).mock.calls[0][0];
+    expect(messages[0].role).toBe("user");
+    expect(messages[1]).toEqual({ role: "assistant", content: "## Do this first" });
+    expect(messages[messages.length - 1].content).toBe("why?");
+  });
+
+  it("leaves a conversation that already opens on a user turn alone", async () => {
+    await POST(
+      request({
+        ...VALID,
+        mode: "chat",
+        messages: [{ role: "user", content: "why is LCP slow?" }],
+      })
+    );
+    const { messages } = vi.mocked(ai.streamCompletion).mock.calls[0][0];
+    expect(messages).toHaveLength(1);
   });
 
   it("passes the conversation through in chat mode", async () => {

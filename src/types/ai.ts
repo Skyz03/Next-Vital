@@ -1,4 +1,4 @@
-export type AiProviderId = "anthropic" | "openrouter";
+export type AiProviderId = "anthropic" | "openrouter" | "gemini" | "local";
 
 export type ChatRole = "user" | "assistant";
 
@@ -13,6 +13,14 @@ export interface ChatMessage {
  * caller's conversation after that same system prompt.
  */
 export type AiMode = "plan" | "chat";
+
+/**
+ * "proxy"   — the key goes to /api/explain, which calls the provider.
+ * "browser" — the browser talks to the endpoint directly. Used for models
+ *             running on the user's own machine, which this server cannot
+ *             reach and has no business relaying.
+ */
+export type AiTransport = "proxy" | "browser";
 
 export interface AiRequest {
   url: string;
