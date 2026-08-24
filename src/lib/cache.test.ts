@@ -27,6 +27,8 @@ const {
   getCached,
   setCached,
   checkRateLimit,
+  checkAiRateLimit,
+  aiRateLimitKey,
   checkDailyCap,
   acquireInflightLock,
   releaseInflightLock,
@@ -218,4 +220,51 @@ describe("in-flight lock", () => {
   });
 
 
+});
+
+describe("checkAiRateLimit", () => {
+  it("uses a key namespace separate from the PSI limiter", () => {
+    // Sharing a key would spend the audit quota on chat turns and vice versa.
+    expect(aiRateLimitKey("1.2.3.4")).not.toBe(rateLimitKey("1.2.3.4"));
+  });
+
+  it("sets the window expiry with NX, like the PSI limiter", async () => {
+    const pipe = pipelineReturning([1, 1]);
+    mockRedis.ttl.mockResolvedValue(3600);
+
+    await checkAiRateLimit("1.2.3.4");
+
+    expect(pipe.incr).toHaveBeenCalledWith("ai:ratelimit:1.2.3.4");
+    expect(pipe.expire).toHaveBeenCalledWith("ai:ratelimit:1.2.3.4", 3600, "NX");
+  });
+
+  it("allows far more requests than the audit quota", async () => {
+    // The tokens spent here are the caller's own, so this budget only exists
+    // to stop the proxy being driven as a general-purpose LLM relay. At the
+    // PSI limit of 5 a user would be cut off after their first chat exchange.
+    pipelineReturning([60, 0]);
+    mockRedis.ttl.mockResolvedValue(1800);
+    const result = await checkAiRateLimit("1.2.3.4");
+    expect(result.allowed).toBe(true);
+    expect(result.remaining).toBe(0);
+  });
+
+  it("blocks past the limit", async () => {
+    pipelineReturning([61, 0]);
+    mockRedis.ttl.mockResolvedValue(1800);
+    const result = await checkAiRateLimit("1.2.3.4");
+    expect(result.allowed).toBe(false);
+    expect(result.retryAfter).toBe(1800);
+  });
+
+  it("fails open when Redis is down", async () => {
+    mockRedis.pipeline.mockImplementation(() => {
+      throw new Error("connection refused");
+    });
+    expect(await checkAiRateLimit("1.2.3.4")).toEqual({
+      allowed: true,
+      remaining: 60,
+      retryAfter: 0,
+    });
+  });
 });
