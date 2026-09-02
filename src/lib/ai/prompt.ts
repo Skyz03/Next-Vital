@@ -2,8 +2,18 @@ import type { AnalysisResult, AuditItem, CoreMetric, NextjsFix } from "@/types/a
 import type { ChatMessage } from "@/types/ai";
 
 export const PLAN_USER_TURN =
-  "Using only the audit data above, give me a prioritised action plan for this site. " +
-  "Lead with the single highest-impact change. Cover at most four items.";
+  "Using only the audit data above, give me a prioritised action plan for this site.\n\n" +
+  "Follow these rules exactly:\n" +
+  "1. Rank items by impact-to-effort ratio, not raw impact alone. A 200 ms gain from a two-line change beats a 300 ms gain from a multi-week refactor.\n" +
+  "2. If several failing audits share a root cause (e.g. all image audits, all unused-JS audits, all render-blocking resources), collapse them into one item and name the shared cause.\n" +
+  "3. Format each item as a level-2 heading using this exact pattern:\n" +
+  "   ## N. Title · Effort · Metric moved\n" +
+  "   where Effort is exactly one of: Quick (under an hour) | Medium (half a day) | Large (multi-day)\n" +
+  "   and 'Metric moved' is the Core Web Vital this primarily affects with an estimated delta, e.g. LCP −1.4 s, TBT −800 ms, Perf +8.\n" +
+  "4. Under each heading: one sentence explaining WHY, grounded in the audit data, then bullet the specific Next.js APIs to use.\n" +
+  "5. For the top item only, include a short runnable Next.js code snippet.\n" +
+  "6. Cover at most five items.\n" +
+  "7. End with a ## Follow-ups section containing exactly three bullet-point questions the developer is most likely to ask next about this site.";
 
 /**
  * Every provider here requires a conversation to open on a user turn. The
@@ -55,6 +65,8 @@ function fixBlock(fix: NextjsFix): string {
   // prompt on an audit that flagged forty resources.
   if (fix.auditItems && fix.auditItems.length > 0) {
     lines.push(...fix.auditItems.slice(0, 3).map(itemLine));
+    const remaining = fix.auditItems.length - 3;
+    if (remaining > 0) lines.push(`  (…${remaining} more)`);
   }
   return lines.join("\n");
 }
@@ -101,6 +113,8 @@ Rules:
 - Never invent a metric, a saving, or a file that is not listed. Say what the data does not tell you.
 - When you cite a saving, use the estimate given for that audit.
 - The developer has already been shown generic per-audit advice. Your value is sequencing and specificity: what to do first for THIS site, why, and what it should move.
+- If several failing audits share a root cause (e.g. all image-related audits, all unused-JS audits, all render-blocking resource audits), name the shared cause and treat them as one recommendation.
+- For the single highest impact-to-effort item, include a short, runnable Next.js code snippet. For other items, add a snippet only when the API is non-obvious.
 - Prefer concrete Next.js APIs over general web advice.
 - Be concise. No preamble, no restating the scores back.
 

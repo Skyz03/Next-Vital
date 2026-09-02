@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { normalizeUrl, isBlockedUrl } from "@/lib/validate";
 
 export default function Home() {
   const [url, setUrl] = useState("");
@@ -13,13 +14,28 @@ export default function Home() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+
+    const raw = url.trim();
+    if (!raw) {
+      setError("Enter a URL to analyze.");
+      return;
+    }
+
+    const withScheme = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+    const normalized = normalizeUrl(withScheme);
+
+    if (isBlockedUrl(normalized)) {
+      setError("That URL isn't allowed — localhost, private ranges, and internal hostnames can't be analyzed.");
+      return;
+    }
+
     setLoading(true);
 
     try {
       const res = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url, strategy }),
+        body: JSON.stringify({ url: normalized, strategy }),
       });
 
       const data = await res.json();
@@ -29,10 +45,7 @@ export default function Home() {
         return;
       }
 
-      // The audit above populated the Redis cache, so the results page can just
-      // ask the API for it — no client-side handoff needed, and the link works
-      // for anyone it gets shared with.
-      const encoded = encodeURIComponent(url);
+      const encoded = encodeURIComponent(normalized);
       router.push(`/results?url=${encoded}&strategy=${strategy}`);
     } catch {
       setError("Network error. Check your connection and try again.");

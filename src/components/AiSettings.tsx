@@ -176,6 +176,11 @@ export default function AiSettings({ creds, onSave, onClear, onClose }: Props) {
             <option key={m} value={m} />
           ))}
         </datalist>
+        {provider === "gemini" && /^gemini-2\.5-pro/.test(model) && (
+          <p className="text-xs text-[var(--text-2)] leading-relaxed">
+            Extended thinking is enabled — plans reason more deeply across related audits but take longer to generate.
+          </p>
+        )}
       </div>
 
       {error && <p className="text-sm text-[var(--poor)]">{error}</p>}

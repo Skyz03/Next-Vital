@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { geminiRequest, geminiDeltas } from "./gemini";
+import { geminiRequest, geminiDeltas, supportsThinking } from "./gemini";
 
 function sse(events: unknown[]): ReadableStream<Uint8Array> {
   const encoder = new TextEncoder();
@@ -45,6 +45,22 @@ describe("geminiRequest", () => {
     expect(body.systemInstruction.parts[0].text).toBe("SYS");
   });
 
+  it("sets temperature and topP for deterministic ranking output", () => {
+    const body = JSON.parse(geminiRequest("k", "gemini-3.7-flash", "SYS", []).init.body as string);
+    expect(body.generationConfig.temperature).toBe(0.4);
+    expect(body.generationConfig.topP).toBe(0.95);
+  });
+
+  it("adds thinkingConfig for gemini-2.5-pro", () => {
+    const body = JSON.parse(geminiRequest("k", "gemini-2.5-pro", "SYS", []).init.body as string);
+    expect(body.generationConfig.thinkingConfig).toEqual({ thinkingBudget: -1 });
+  });
+
+  it("omits thinkingConfig for non-thinking models", () => {
+    const body = JSON.parse(geminiRequest("k", "gemini-3.7-flash", "SYS", []).init.body as string);
+    expect(body.generationConfig.thinkingConfig).toBeUndefined();
+  });
+
   it("renames the assistant role to model", () => {
     const body = JSON.parse(
       geminiRequest("k", "m", "SYS", [
@@ -54,6 +70,26 @@ describe("geminiRequest", () => {
     );
     expect(body.contents[0]).toEqual({ role: "user", parts: [{ text: "hi" }] });
     expect(body.contents[1]).toEqual({ role: "model", parts: [{ text: "hello" }] });
+  });
+});
+
+describe("supportsThinking", () => {
+  it("returns true for gemini-2.5-pro", () => {
+    expect(supportsThinking("gemini-2.5-pro")).toBe(true);
+  });
+
+  it("returns true for gemini-2.5-pro-exp variants", () => {
+    expect(supportsThinking("gemini-2.5-pro-exp")).toBe(true);
+  });
+
+  it("returns false for flash models", () => {
+    expect(supportsThinking("gemini-3.7-flash")).toBe(false);
+    expect(supportsThinking("gemini-3.5-flash")).toBe(false);
+  });
+
+  it("returns false for older pro models that predate thinking", () => {
+    expect(supportsThinking("gemini-2.0-pro")).toBe(false);
+    expect(supportsThinking("gemini-1.5-pro")).toBe(false);
   });
 });
 

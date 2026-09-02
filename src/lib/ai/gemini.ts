@@ -2,6 +2,11 @@ import { parseSSE } from "./sse";
 import { PROVIDERS } from "./providers";
 import type { ChatMessage } from "@/types/ai";
 
+/** Gemini 2.5 Pro supports a dynamic thinking budget; earlier models reject it. */
+export function supportsThinking(model: string): boolean {
+  return /^gemini-2\.5-pro/.test(model);
+}
+
 export function geminiRequest(
   key: string,
   model: string,
@@ -31,7 +36,14 @@ export function geminiRequest(
           role: m.role === "assistant" ? "model" : "user",
           parts: [{ text: m.content }],
         })),
-        generationConfig: { maxOutputTokens: 4096 },
+        generationConfig: {
+          maxOutputTokens: 4096,
+          // Lower temperature + topP make the plan consistent across regenerations.
+          // This is ranking/summarising a structured payload, not creative writing.
+          temperature: 0.4,
+          topP: 0.95,
+          ...(supportsThinking(model) ? { thinkingConfig: { thinkingBudget: -1 } } : {}),
+        },
       }),
     },
   };

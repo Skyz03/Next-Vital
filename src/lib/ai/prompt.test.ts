@@ -127,6 +127,15 @@ describe("buildSystemPrompt", () => {
     expect(prompt).not.toContain("fourth");
   });
 
+  it("appends a '…N more' note when items are truncated", () => {
+    // The RESULT fixture has 4 auditItems; only 3 shown, so 1 more is noted.
+    expect(prompt).toContain("(…1 more)");
+  });
+
+  it("instructs the model to group audits sharing a root cause", () => {
+    expect(prompt).toContain("root cause");
+  });
+
   it("lists the passing checks", () => {
     expect(prompt).toContain("Has a document title");
   });
@@ -155,5 +164,19 @@ describe("buildSystemPrompt", () => {
 describe("PLAN_USER_TURN", () => {
   it("scopes the model to the supplied data", () => {
     expect(PLAN_USER_TURN).toContain("Using only the audit data above");
+  });
+
+  it("includes all three effort labels", () => {
+    expect(PLAN_USER_TURN).toContain("Quick");
+    expect(PLAN_USER_TURN).toContain("Medium");
+    expect(PLAN_USER_TURN).toContain("Large");
+  });
+
+  it("asks for audit grouping by root cause", () => {
+    expect(PLAN_USER_TURN).toContain("root cause");
+  });
+
+  it("requests a Follow-ups section", () => {
+    expect(PLAN_USER_TURN).toContain("Follow-ups");
   });
 });

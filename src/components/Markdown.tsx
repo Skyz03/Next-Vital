@@ -68,12 +68,44 @@ export default function Markdown({ children }: { children: string }) {
 
     const heading = /^(#{1,3})\s+(.*)$/.exec(line);
     if (heading) {
+      const level = heading[1].length;
+      const text = heading[2];
+
+      // Structured plan heading: ## N. Title · Effort · Metric moved
+      if (level === 2) {
+        const structured = /^(\d+)\. (.+?) · (Quick|Medium|Large) · (.+)$/.exec(text);
+        if (structured) {
+          const [, num, title, effort, metric] = structured;
+          const effortClass =
+            effort === "Quick"
+              ? "rating-good bg-rating-good"
+              : effort === "Medium"
+                ? "rating-needs bg-rating-needs"
+                : "rating-poor bg-rating-poor";
+          blocks.push(
+            <div key={blocks.length} className="flex flex-wrap items-baseline gap-2 mt-3">
+              <h4 className="text-sm font-semibold text-[var(--text)]">
+                {num}. {renderInline(title)}
+              </h4>
+              <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${effortClass}`}>
+                {effort}
+              </span>
+              <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-[var(--surface-2)] text-[var(--text-2)]">
+                {metric}
+              </span>
+            </div>
+          );
+          i++;
+          continue;
+        }
+      }
+
       blocks.push(
         <h4
           key={blocks.length}
           className="text-sm font-semibold text-[var(--text)] mt-1"
         >
-          {renderInline(heading[2])}
+          {renderInline(text)}
         </h4>
       );
       i++;

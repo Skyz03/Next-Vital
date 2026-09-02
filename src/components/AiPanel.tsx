@@ -1,6 +1,25 @@
 "use client";
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+
+/**
+ * Splits a plan string at the `## Follow-ups` section.
+ * Returns the plan body (safe to display) and up to 4 chip strings.
+ * Exported so it can be unit-tested without React.
+ */
+export function parseFollowUps(planText: string): { body: string; chips: string[] } {
+  const marker = "\n## Follow-ups";
+  const idx = planText.indexOf(marker);
+  if (idx === -1) return { body: planText, chips: [] };
+  const body = planText.slice(0, idx).trim();
+  const tail = planText.slice(idx + marker.length);
+  const chips = tail
+    .split("\n")
+    .map((line) => line.replace(/^\s*[-*]\s+/, "").trim())
+    .filter((line) => line.length > 0)
+    .slice(0, 4);
+  return { body, chips };
+}
 import type { AnalysisResult } from "@/types/analysis";
 import type { AiMode, ChatMessage } from "@/types/ai";
 import { streamAnswer } from "@/lib/ai/client";
@@ -34,6 +53,7 @@ export default function AiPanel({ result }: Props) {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [copied, setCopied] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
   // A stream left running after navigation would keep spending the user's tokens.
@@ -73,18 +93,14 @@ export default function AiPanel({ result }: Props) {
     }
   }
 
-  async function sendMessage(e: React.FormEvent) {
-    e.preventDefault();
-    const question = input.trim();
-    if (!question || busy) return;
-
+  async function send(question: string) {
     setError("");
-    setInput("");
     setBusy(true);
 
-    // The plan is the opening assistant turn so follow-ups can refer to it.
+    // The plan body (without the Follow-ups section) anchors follow-up context.
+    const { body: planBody } = parseFollowUps(plan);
     const full: ChatMessage[] = [
-      ...(plan ? ([{ role: "assistant", content: plan }] as ChatMessage[]) : []),
+      ...(planBody ? ([{ role: "assistant", content: planBody }] as ChatMessage[]) : []),
       ...chat,
       { role: "user", content: question },
     ];
@@ -117,6 +133,25 @@ export default function AiPanel({ result }: Props) {
     }
   }
 
+  async function sendMessage(e: React.FormEvent) {
+    e.preventDefault();
+    const question = input.trim();
+    if (!question || busy) return;
+    setInput("");
+    await send(question);
+  }
+
+  async function copyPlan() {
+    const { body: planBody } = parseFollowUps(plan);
+    try {
+      await navigator.clipboard.writeText(planBody);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard not available (non-HTTPS or browser restriction); fail silently.
+    }
+  }
+
   function handleSave(next: StoredCreds) {
     saveCreds(next);
     setShowSettings(false);
@@ -131,6 +166,7 @@ export default function AiPanel({ result }: Props) {
   }
 
   const waitingForPlan = busy && plan === "";
+  const { body: planBody, chips: suggestedFollowUps } = parseFollowUps(plan);
 
   return (
     <section>
@@ -197,14 +233,22 @@ export default function AiPanel({ result }: Props) {
 
           {plan !== "" && (
             <div className="border border-[var(--border)] rounded-xl p-4">
-              <Markdown>{plan}</Markdown>
+              <Markdown>{planBody}</Markdown>
               {!busy && (
-                <button
-                  onClick={generatePlan}
-                  className="text-xs text-[var(--text-2)] hover:text-[var(--text)] mt-4"
-                >
-                  Regenerate
-                </button>
+                <div className="flex gap-3 mt-4">
+                  <button
+                    onClick={generatePlan}
+                    className="text-xs text-[var(--text-2)] hover:text-[var(--text)]"
+                  >
+                    Regenerate
+                  </button>
+                  <button
+                    onClick={copyPlan}
+                    className="text-xs text-[var(--text-2)] hover:text-[var(--text)]"
+                  >
+                    {copied ? "Copied" : "Copy plan"}
+                  </button>
+                </div>
               )}
             </div>
           )}
@@ -227,6 +271,22 @@ export default function AiPanel({ result }: Props) {
               )}
             </div>
           ))}
+
+          {plan !== "" && !busy && suggestedFollowUps.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {suggestedFollowUps.map((chip, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  disabled={busy}
+                  onClick={() => send(chip)}
+                  className="text-xs px-3 py-1.5 rounded-full border border-[var(--border)] text-[var(--text-2)] hover:border-[var(--brand)] hover:text-[var(--brand)] transition-colors"
+                >
+                  {chip}
+                </button>
+              ))}
+            </div>
+          )}
 
           {plan !== "" && (
             <form onSubmit={sendMessage} className="flex gap-2">

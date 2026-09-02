@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useRef, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import type { AnalysisResult } from "@/types/analysis";
 import ScoreRing from "@/components/ScoreRing";
 import MetricCard from "@/components/MetricCard";
 import FixCard from "@/components/FixCard";
 import AiPanel from "@/components/AiPanel";
+import ResultsSkeleton from "@/components/ResultsSkeleton";
 
 const CATEGORY_META = {
   performance: { label: "Performance" },
@@ -14,30 +15,84 @@ const CATEGORY_META = {
   accessibility: { label: "Accessibility" },
 } as const;
 
+function formatElapsed(sec: number): string {
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+function getStatusCopy(sec: number): string {
+  if (sec < 8) return "Contacting PageSpeed Insights…";
+  if (sec < 22) return "Google is running Lighthouse on your page…";
+  if (sec < 40) return "Mapping audits to Next.js fixes…";
+  return "Still going — complex pages can take a minute.";
+}
+
+interface HeaderProps {
+  url: string;
+  strategy: string;
+  result?: AnalysisResult | null;
+}
+
+function Header({ url, strategy, result }: HeaderProps) {
+  const router = useRouter();
+  return (
+    <div>
+      <button
+        onClick={() => router.push("/")}
+        className="text-xs text-[var(--text-2)] hover:text-[var(--text)] mb-3 block"
+      >
+        ← New audit
+      </button>
+      <h1 className="text-lg font-semibold text-[var(--text)] break-all">{url}</h1>
+      <p className="text-xs text-[var(--text-2)] mt-1">
+        {strategy} · Lighthouse {result?.lighthouseVersion ?? "…"}
+        {result?.fromCache && (
+          <span className="ml-2 text-[var(--needs)]">
+            · Cached {new Date(result.cachedAt).toLocaleString()}
+          </span>
+        )}
+      </p>
+    </div>
+  );
+}
+
 function ResultsContent() {
   const params = useSearchParams();
   const router = useRouter();
+
+  const urlParam = params.get("url") ?? "";
+  const strategyParam = (params.get("strategy") ?? "mobile") as "mobile" | "desktop";
+
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [elapsed, setElapsed] = useState(0);
+  const [showSkeleton, setShowSkeleton] = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
-    const urlParam = params.get("url");
     if (!urlParam) {
       router.replace("/");
       return;
     }
 
-    const strategyParam = (params.get("strategy") ?? "mobile") as "mobile" | "desktop";
+    const controller = new AbortController();
+    abortRef.current = controller;
 
-    // Always ask the API rather than handing the result over in sessionStorage.
-    // The audit that produced this link has already populated the Redis cache,
-    // so this is a cache hit that costs the caller no quota — and it means a
-    // shared link works for someone who never ran the audit.
-    let cancelled = false;
+    let timerInterval: ReturnType<typeof setInterval> | null = null;
+    let skeletonTimeout: ReturnType<typeof setTimeout> | null = null;
+
+    setElapsed(0);
+    setShowSkeleton(false);
+
+    timerInterval = setInterval(() => setElapsed((e) => e + 1), 1000);
+    skeletonTimeout = setTimeout(() => setShowSkeleton(true), 150);
+
     fetch("/api/analyze", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ url: urlParam, strategy: strategyParam }),
+      signal: controller.signal,
     })
       .then(async (res) => {
         const data = await res.json();
@@ -45,16 +100,23 @@ function ResultsContent() {
         return data as AnalysisResult;
       })
       .then((data) => {
-        if (!cancelled) setResult(data);
+        setResult(data);
+        setShowSkeleton(false);
       })
       .catch((err: Error) => {
-        if (!cancelled) setLoadError(err.message ?? "Failed to load results.");
+        if (err.name === "AbortError") return;
+        setLoadError(err.message ?? "Failed to load results.");
+      })
+      .finally(() => {
+        if (timerInterval) clearInterval(timerInterval);
       });
 
     return () => {
-      cancelled = true;
+      controller.abort();
+      if (timerInterval) clearInterval(timerInterval);
+      if (skeletonTimeout) clearTimeout(skeletonTimeout);
     };
-  }, [params, router]);
+  }, [params, router, urlParam, strategyParam]);
 
   if (loadError) {
     return (
@@ -72,13 +134,32 @@ function ResultsContent() {
 
   if (!result) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-[var(--text-2)]">
-        Loading…
-      </div>
+      <main className="min-h-screen px-4 py-12">
+        <div className="max-w-2xl mx-auto space-y-10">
+          <Header url={urlParam} strategy={strategyParam} />
+
+          <div className="flex items-center justify-between gap-4">
+            <p className="text-sm text-[var(--text-2)]">
+              <span className="font-mono tabular-nums">{formatElapsed(elapsed)}</span>
+              {" · "}
+              {getStatusCopy(elapsed)}
+            </p>
+            <button
+              onClick={() => {
+                abortRef.current?.abort();
+                router.push("/");
+              }}
+              className="text-xs text-[var(--text-2)] hover:text-[var(--text)] shrink-0"
+            >
+              Cancel
+            </button>
+          </div>
+
+          {showSkeleton && <ResultsSkeleton />}
+        </div>
+      </main>
     );
   }
-
-  const url = params.get("url") ?? result.url;
 
   const scoreItems = [
     { label: "Performance", score: result.performanceScore },
@@ -98,24 +179,7 @@ function ResultsContent() {
     <main className="min-h-screen px-4 py-12">
       <div className="max-w-2xl mx-auto space-y-10">
 
-        {/* Header */}
-        <div>
-          <button
-            onClick={() => router.push("/")}
-            className="text-xs text-[var(--text-2)] hover:text-[var(--text)] mb-3 block"
-          >
-            ← New audit
-          </button>
-          <h1 className="text-lg font-semibold text-[var(--text)] break-all">{url}</h1>
-          <p className="text-xs text-[var(--text-2)] mt-1">
-            {result.strategy} · Lighthouse {result.lighthouseVersion}
-            {result.fromCache && (
-              <span className="ml-2 text-[var(--needs)]">
-                · Cached {new Date(result.cachedAt).toLocaleString()}
-              </span>
-            )}
-          </p>
-        </div>
+        <Header url={urlParam} strategy={strategyParam} result={result} />
 
         {/* Score row */}
         <div className="flex gap-6 justify-center">
