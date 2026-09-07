@@ -29,8 +29,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={inter.className}>
-      <body>{children}</body>
+    <html lang="en" className={inter.className} suppressHydrationWarning>
+      <body className="relative">
+        <div className="nova-glow" aria-hidden="true" />
+        <div className="relative z-10">{children}</div>
+      </body>
     </html>
   );
 }

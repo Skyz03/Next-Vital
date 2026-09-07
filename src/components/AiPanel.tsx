@@ -43,9 +43,6 @@ interface Props {
 }
 
 export default function AiPanel({ result }: Props) {
-  // localStorage is an external store, so it is subscribed to rather than
-  // copied into state on mount: SSR renders the empty state via the server
-  // snapshot, and a key saved in another tab shows up here too.
   const creds = useSyncExternalStore(subscribeCreds, getCredsSnapshot, getServerCredsSnapshot);
   const [showSettings, setShowSettings] = useState(false);
   const [plan, setPlan] = useState("");
@@ -56,7 +53,6 @@ export default function AiPanel({ result }: Props) {
   const [copied, setCopied] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
-  // A stream left running after navigation would keep spending the user's tokens.
   useEffect(() => () => abortRef.current?.abort(), []);
 
   async function runStream(
@@ -67,8 +63,6 @@ export default function AiPanel({ result }: Props) {
     if (!creds) return;
     const controller = new AbortController();
     abortRef.current = controller;
-    // streamAnswer picks the transport: hosted providers go through
-    // /api/explain, a local runtime is called straight from the browser.
     for await (const chunk of streamAnswer({
       result,
       creds,
@@ -97,16 +91,12 @@ export default function AiPanel({ result }: Props) {
     setError("");
     setBusy(true);
 
-    // The plan body (without the Follow-ups section) anchors follow-up context.
     const { body: planBody } = parseFollowUps(plan);
     const full: ChatMessage[] = [
       ...(planBody ? ([{ role: "assistant", content: planBody }] as ChatMessage[]) : []),
       ...chat,
       { role: "user", content: question },
     ];
-    // The route caps a conversation at MAX_TURNS. Trim here rather than letting
-    // a long chat fail with a validation error the user cannot act on: keep the
-    // plan as the anchor and drop the oldest follow-ups.
     const history =
       full.length <= MAX_TURNS
         ? full
@@ -125,7 +115,6 @@ export default function AiPanel({ result }: Props) {
     } catch (err) {
       if ((err as Error).name !== "AbortError") {
         setError((err as Error).message);
-        // Drop the empty assistant bubble so the transcript is not misleading.
         setChat((c) => (c[c.length - 1]?.content === "" ? c.slice(0, -1) : c));
       }
     } finally {
@@ -148,7 +137,7 @@ export default function AiPanel({ result }: Props) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Clipboard not available (non-HTTPS or browser restriction); fail silently.
+      // Clipboard not available; fail silently.
     }
   }
 
@@ -171,13 +160,13 @@ export default function AiPanel({ result }: Props) {
   return (
     <section>
       <div className="flex items-center justify-between gap-4 mb-4">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-[var(--text-2)]">
+        <h2 className="gradient-text text-xs font-semibold uppercase tracking-widest">
           AI analysis
         </h2>
         {creds && !showSettings && (
           <button
             onClick={() => setShowSettings(true)}
-            className="text-xs text-[var(--text-2)] hover:text-[var(--text)]"
+            className="text-xs text-[var(--text-2)] hover:text-[var(--text)] transition-colors"
           >
             {PROVIDERS[creds.provider].label} · {creds.model} · change
           </button>
@@ -194,7 +183,7 @@ export default function AiPanel({ result }: Props) {
       )}
 
       {!creds && !showSettings && (
-        <div className="border border-dashed border-[var(--border)] rounded-xl p-6 text-center space-y-3">
+        <div className="glass rounded-xl p-6 text-center space-y-3">
           <p className="text-sm text-[var(--text)]">
             Turn this report into a prioritised plan, and ask follow-up questions.
           </p>
@@ -205,8 +194,7 @@ export default function AiPanel({ result }: Props) {
           </p>
           <button
             onClick={() => setShowSettings(true)}
-            className="text-sm font-semibold px-4 py-2 rounded-lg text-white transition-opacity hover:opacity-90"
-            style={{ background: "var(--brand)" }}
+            className="btn-gradient text-sm font-semibold px-4 py-2 rounded-lg focus-brand"
           >
             Connect a model
           </button>
@@ -218,8 +206,7 @@ export default function AiPanel({ result }: Props) {
           {plan === "" && !busy && (
             <button
               onClick={generatePlan}
-              className="w-full py-3 rounded-xl text-sm font-semibold text-white transition-opacity hover:opacity-90"
-              style={{ background: "var(--brand)" }}
+              className="btn-gradient w-full py-3 rounded-xl text-sm font-semibold focus-brand"
             >
               Generate action plan
             </button>
@@ -232,19 +219,19 @@ export default function AiPanel({ result }: Props) {
           )}
 
           {plan !== "" && (
-            <div className="border border-[var(--border)] rounded-xl p-4">
+            <div className="glass rounded-xl p-4">
               <Markdown>{planBody}</Markdown>
               {!busy && (
                 <div className="flex gap-3 mt-4">
                   <button
                     onClick={generatePlan}
-                    className="text-xs text-[var(--text-2)] hover:text-[var(--text)]"
+                    className="text-xs text-[var(--text-2)] hover:text-[var(--text)] transition-colors"
                   >
                     Regenerate
                   </button>
                   <button
                     onClick={copyPlan}
-                    className="text-xs text-[var(--text-2)] hover:text-[var(--text)]"
+                    className="text-xs text-[var(--text-2)] hover:text-[var(--text)] transition-colors"
                   >
                     {copied ? "Copied" : "Copy plan"}
                   </button>
@@ -256,11 +243,7 @@ export default function AiPanel({ result }: Props) {
           {chat.map((message, i) => (
             <div
               key={i}
-              className={
-                message.role === "user"
-                  ? "bg-[var(--surface-2)] border border-[var(--border)] rounded-xl px-4 py-3"
-                  : "border border-[var(--border)] rounded-xl p-4"
-              }
+              className="glass rounded-xl px-4 py-3"
             >
               {message.role === "user" ? (
                 <p className="text-sm text-[var(--text)] leading-relaxed">{message.content}</p>
@@ -280,7 +263,7 @@ export default function AiPanel({ result }: Props) {
                   type="button"
                   disabled={busy}
                   onClick={() => send(chip)}
-                  className="text-xs px-3 py-1.5 rounded-full border border-[var(--border)] text-[var(--text-2)] hover:border-[var(--brand)] hover:text-[var(--brand)] transition-colors"
+                  className="glass text-xs px-3 py-1.5 rounded-full text-[var(--text-2)] hover:text-[var(--brand-from)] transition-colors"
                 >
                   {chip}
                 </button>
@@ -296,13 +279,12 @@ export default function AiPanel({ result }: Props) {
                 placeholder="Ask a follow-up about this report…"
                 disabled={busy}
                 aria-label="Ask a follow-up question"
-                className="flex-1 min-w-0 px-4 py-2.5 text-sm rounded-xl border border-[var(--border)] bg-[var(--surface)] outline-none focus:ring-2 focus:ring-[var(--brand)] text-[var(--text)] placeholder:text-[var(--text-2)]"
+                className="flex-1 min-w-0 px-4 py-2.5 text-sm rounded-xl border border-[var(--border-2)] bg-[var(--surface)] outline-none text-[var(--text)] placeholder:text-[var(--text-2)] focus-brand"
               />
               <button
                 type="submit"
                 disabled={busy || input.trim() === ""}
-                className="px-4 py-2.5 rounded-xl text-sm font-semibold text-white transition-opacity disabled:opacity-40"
-                style={{ background: "var(--brand)" }}
+                className="btn-gradient px-4 py-2.5 rounded-xl text-sm font-semibold focus-brand disabled:opacity-40"
               >
                 Ask
               </button>

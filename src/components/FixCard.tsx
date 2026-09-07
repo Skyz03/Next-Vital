@@ -29,7 +29,7 @@ function AuditItems({ items }: { items: AuditItem[] }) {
         {items.map((item, i) => (
           <div
             key={i}
-            className="flex items-center gap-3 text-xs bg-[var(--surface-2)] border border-[var(--border)] rounded-lg px-3 py-2"
+            className="flex items-center gap-3 text-xs bg-[var(--surface-3)] border border-[var(--border)] rounded-lg px-3 py-2"
           >
             <span className="font-mono text-[var(--text)] truncate flex-1 min-w-0">
               {item.url ? shortenUrl(item.url) : item.label}
@@ -67,10 +67,10 @@ export default function FixCard({ fix, index }: Props) {
   const impact = IMPACT_COLORS[fix.impact];
 
   return (
-    <div className="border border-[var(--border)] rounded-xl overflow-hidden">
+    <div className="glass rounded-xl overflow-hidden">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center gap-3 p-4 text-left hover:bg-[var(--surface-2)] transition-colors"
+        className="w-full flex items-center gap-3 p-4 text-left hover:bg-[var(--surface-3)] transition-colors focus-brand"
         aria-expanded={open}
       >
         <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${impact.bg} ${impact.text}`}>
@@ -82,7 +82,21 @@ export default function FixCard({ fix, index }: Props) {
             ~{(fix.savingsMs / 1000).toFixed(1)}s saved
           </span>
         )}
-        <span className="text-[var(--text-2)] text-xs">{open ? "▲" : "▼"}</span>
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="text-[var(--text-2)] shrink-0 transition-transform duration-200"
+          style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)" }}
+          aria-hidden="true"
+        >
+          <path d="M6 9l6 6 6-6" />
+        </svg>
       </button>
 
       {open && (
@@ -99,7 +113,7 @@ export default function FixCard({ fix, index }: Props) {
             <p className="text-sm text-[var(--text)] leading-relaxed">{fix.fix}</p>
           </div>
           {fix.codeExample && (
-            <pre className="text-xs bg-[var(--surface-2)] border border-[var(--border)] rounded-lg p-3 overflow-x-auto font-mono leading-relaxed text-[var(--text)]">
+            <pre className="text-xs bg-[var(--surface-3)] border border-[var(--border)] rounded-lg p-3 overflow-x-auto font-mono leading-relaxed text-[var(--text)]">
               {fix.codeExample}
             </pre>
           )}

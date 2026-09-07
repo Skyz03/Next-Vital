@@ -11,15 +11,9 @@ const RATING_LABEL = {
 };
 
 export default function MetricCard({ metric }: Props) {
-  // hasData is false when neither lab nor field data is available (e.g. INP on a
-  // site with no CrUX history). Render a neutral "no data" card instead of a
-  // misleading "Poor" rating derived from a null score.
   if (metric.hasData === false) {
     return (
-      <div
-        className="rounded-xl p-4 border"
-        style={{ background: "var(--surface-2)", borderColor: "var(--border)" }}
-      >
+      <div className="glass rounded-xl p-4">
         <div className="flex items-start justify-between gap-2 mb-1">
           <span className="text-sm font-semibold text-[var(--text)]">{metric.label}</span>
           <span className="text-xs text-[var(--text-2)] uppercase tracking-wide">No data</span>
@@ -31,11 +25,15 @@ export default function MetricCard({ metric }: Props) {
   }
 
   const ratingClass = metric.rating === "needs-improvement" ? "needs" : metric.rating;
+  const borderLeftColor =
+    metric.rating === "good" ? "var(--good)"
+    : metric.rating === "needs-improvement" ? "var(--needs)"
+    : "var(--poor)";
 
   return (
     <div
-      className={`bg-rating-${ratingClass} rounded-xl p-4 border border-current/10`}
-      style={{ borderColor: "var(--border)" }}
+      className="glass rounded-xl p-4 border-l-2"
+      style={{ borderLeftColor }}
     >
       <div className="flex items-start justify-between gap-2 mb-1">
         <span className="text-sm font-semibold text-[var(--text)]">{metric.label}</span>

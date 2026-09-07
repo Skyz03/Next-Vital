@@ -40,9 +40,12 @@ function Header({ url, strategy, result }: HeaderProps) {
     <div>
       <button
         onClick={() => router.push("/")}
-        className="text-xs text-[var(--text-2)] hover:text-[var(--text)] mb-3 block"
+        className="inline-flex items-center gap-1 text-xs text-[var(--text-2)] hover:text-[var(--text)] mb-3 transition-colors"
       >
-        ← New audit
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M19 12H5M12 5l-7 7 7 7" />
+        </svg>
+        New audit
       </button>
       <h1 className="text-lg font-semibold text-[var(--text)] break-all">{url}</h1>
       <p className="text-xs text-[var(--text-2)] mt-1">
@@ -124,7 +127,7 @@ function ResultsContent() {
         <p className="text-sm text-[var(--poor)]">{loadError}</p>
         <button
           onClick={() => router.push("/")}
-          className="text-xs text-[var(--text-2)] hover:text-[var(--text)]"
+          className="text-xs text-[var(--text-2)] hover:text-[var(--text)] transition-colors"
         >
           ← New audit
         </button>
@@ -138,9 +141,9 @@ function ResultsContent() {
         <div className="max-w-2xl mx-auto space-y-10">
           <Header url={urlParam} strategy={strategyParam} />
 
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center justify-between gap-4 glass rounded-xl px-4 py-3">
             <p className="text-sm text-[var(--text-2)]">
-              <span className="font-mono tabular-nums">{formatElapsed(elapsed)}</span>
+              <span className="font-mono tabular-nums text-[var(--text)]">{formatElapsed(elapsed)}</span>
               {" · "}
               {getStatusCopy(elapsed)}
             </p>
@@ -149,7 +152,7 @@ function ResultsContent() {
                 abortRef.current?.abort();
                 router.push("/");
               }}
-              className="text-xs text-[var(--text-2)] hover:text-[var(--text)] shrink-0"
+              className="text-xs text-[var(--text-2)] hover:text-[var(--text)] shrink-0 transition-colors"
             >
               Cancel
             </button>
@@ -182,18 +185,18 @@ function ResultsContent() {
         <Header url={urlParam} strategy={strategyParam} result={result} />
 
         {/* Score row */}
-        <div className="flex gap-6 justify-center">
+        <div className="glass rounded-2xl py-8 px-6 flex gap-8 justify-center">
           {scoreItems.map(({ label, score }) => (
-            <div key={label} className="flex flex-col items-center gap-1">
-              <ScoreRing score={score} size={88} />
-              <span className="text-xs text-[var(--text-2)]">{label}</span>
+            <div key={label} className="flex flex-col items-center gap-2">
+              <ScoreRing score={score} size={96} />
+              <span className="text-xs font-medium text-[var(--text-2)] uppercase tracking-widest">{label}</span>
             </div>
           ))}
         </div>
 
         {/* Performance metrics */}
         <section>
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-[var(--text-2)] mb-4">
+          <h2 className="gradient-text text-xs font-semibold uppercase tracking-widest mb-4">
             Performance metrics
           </h2>
           <div className="grid grid-cols-2 gap-3">
@@ -206,7 +209,7 @@ function ResultsContent() {
         {/* Fixes grouped by category */}
         {totalFixes === 0 ? (
           <section>
-            <h2 className="text-xs font-semibold uppercase tracking-widest text-[var(--text-2)] mb-4">
+            <h2 className="gradient-text text-xs font-semibold uppercase tracking-widest mb-4">
               No fixes needed — great work
             </h2>
             <p className="text-sm text-[var(--text-2)]">
@@ -216,7 +219,8 @@ function ResultsContent() {
         ) : (
           fixCategories.map((cat, catIndex) => (
             <section key={cat.key}>
-              <h2 className="text-xs font-semibold uppercase tracking-widest text-[var(--text-2)] mb-4">
+              {catIndex > 0 && <hr className="section-sep mb-10 -mt-4" />}
+              <h2 className="gradient-text text-xs font-semibold uppercase tracking-widest mb-4">
                 {cat.fixes.length} {cat.label} fix{cat.fixes.length === 1 ? "" : "es"} found
               </h2>
               <div className="space-y-3">
@@ -235,16 +239,29 @@ function ResultsContent() {
         {/* Already optimized */}
         {result.passingChecks && result.passingChecks.length > 0 && (
           <section>
-            <h2 className="text-xs font-semibold uppercase tracking-widest text-[var(--text-2)] mb-4">
+            <h2 className="gradient-text text-xs font-semibold uppercase tracking-widest mb-4">
               Already optimized
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {result.passingChecks.map((check) => (
                 <div
                   key={check.audit}
-                  className="flex items-center gap-2.5 text-xs bg-rating-good rounded-lg px-3 py-2.5 border border-[var(--border)]"
+                  className="flex items-center gap-2.5 text-xs glass rounded-lg px-3 py-2.5"
                 >
-                  <span className="rating-good font-bold text-sm leading-none">✓</span>
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="rating-good shrink-0"
+                    aria-hidden="true"
+                  >
+                    <path d="M20 6L9 17l-5-5" />
+                  </svg>
                   <span className="text-[var(--text)]">{check.title}</span>
                 </div>
               ))}

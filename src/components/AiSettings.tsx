@@ -23,8 +23,6 @@ export default function AiSettings({ creds, onSave, onClear, onClose }: Props) {
 
   function selectProvider(next: AiProviderId) {
     setProvider(next);
-    // Carrying a model slug across providers is always wrong — "claude-opus-5"
-    // is not a valid OpenRouter id, and vice versa.
     setModel(PROVIDERS[next].defaultModel);
     setError("");
   }
@@ -35,7 +33,6 @@ export default function AiSettings({ creds, onSave, onClear, onClose }: Props) {
       return;
     }
 
-    // A local runtime authenticates nothing, so there is no key to demand.
     if (!def.requiresKey) {
       setError("");
       onSave({ provider, key: "", model: model.trim(), baseUrl: baseUrl.trim() || undefined });
@@ -43,7 +40,6 @@ export default function AiSettings({ creds, onSave, onClear, onClose }: Props) {
     }
 
     const trimmed = key.trim();
-    // An existing key can be kept while only the model changes.
     const effectiveKey = trimmed || (creds?.provider === provider ? creds.key : "");
     if (!effectiveKey) {
       setError("Paste an API key to continue.");
@@ -55,7 +51,7 @@ export default function AiSettings({ creds, onSave, onClear, onClose }: Props) {
   }
 
   return (
-    <div className="border border-[var(--border)] rounded-xl p-4 space-y-4 bg-[var(--surface-2)]">
+    <div className="glass rounded-xl p-4 space-y-4">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-sm font-semibold text-[var(--text)]">AI provider</p>
@@ -65,7 +61,7 @@ export default function AiSettings({ creds, onSave, onClear, onClose }: Props) {
         </div>
         <button
           onClick={onClose}
-          className="text-xs text-[var(--text-2)] hover:text-[var(--text)] shrink-0"
+          className="text-xs text-[var(--text-2)] hover:text-[var(--text)] shrink-0 transition-colors"
         >
           Close
         </button>
@@ -80,8 +76,8 @@ export default function AiSettings({ creds, onSave, onClear, onClose }: Props) {
               onClick={() => selectProvider(id)}
               className={`py-2 px-3 rounded-lg text-sm font-medium border transition-colors ${
                 provider === id
-                  ? "border-[var(--brand)] text-[var(--brand)] bg-[var(--surface)]"
-                  : "border-[var(--border)] text-[var(--text-2)] hover:border-[var(--text-2)]"
+                  ? "border-[var(--brand-from)] text-[var(--brand-from)] bg-[var(--surface-3)]"
+                  : "border-[var(--border)] text-[var(--text-2)] hover:border-[var(--border-2)] hover:text-[var(--text)]"
               }`}
             >
               {PROVIDERS[id].label}
@@ -109,7 +105,7 @@ export default function AiSettings({ creds, onSave, onClear, onClose }: Props) {
             }
             autoComplete="off"
             spellCheck={false}
-            className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--border)] bg-[var(--surface)] outline-none focus:ring-2 focus:ring-[var(--brand)] text-[var(--text)] placeholder:text-[var(--text-2)] font-mono"
+            className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--border-2)] bg-[var(--surface)] outline-none focus-brand text-[var(--text)] placeholder:text-[var(--text-2)] font-mono"
           />
           <a
             href={def.keyUrl}
@@ -134,7 +130,7 @@ export default function AiSettings({ creds, onSave, onClear, onClose }: Props) {
             onChange={(e) => setBaseUrl(e.target.value)}
             placeholder={PROVIDERS.local.endpoint}
             spellCheck={false}
-            className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--border)] bg-[var(--surface)] outline-none focus:ring-2 focus:ring-[var(--brand)] text-[var(--text)] placeholder:text-[var(--text-2)] font-mono"
+            className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--border-2)] bg-[var(--surface)] outline-none focus-brand text-[var(--text)] placeholder:text-[var(--text-2)] font-mono"
           />
           <p className="text-xs text-[var(--text-2)] leading-relaxed">
             Your browser talks to this address directly — the request never touches our server, so
@@ -161,15 +157,13 @@ export default function AiSettings({ creds, onSave, onClear, onClose }: Props) {
         >
           Model
         </label>
-        {/* Free text with suggestions rather than a fixed dropdown — OpenRouter
-            alone carries 400+ models and rotates its free tier. */}
         <input
           id="ai-model"
           list="ai-model-options"
           value={model}
           onChange={(e) => setModel(e.target.value)}
           spellCheck={false}
-          className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--border)] bg-[var(--surface)] outline-none focus:ring-2 focus:ring-[var(--brand)] text-[var(--text)] font-mono"
+          className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--border-2)] bg-[var(--surface)] outline-none focus-brand text-[var(--text)] font-mono"
         />
         <datalist id="ai-model-options">
           {def.suggestedModels.map((m) => (
@@ -188,8 +182,7 @@ export default function AiSettings({ creds, onSave, onClear, onClose }: Props) {
       <div className="flex gap-2">
         <button
           onClick={handleSave}
-          className="flex-1 py-2 rounded-lg text-sm font-semibold text-white transition-opacity hover:opacity-90"
-          style={{ background: "var(--brand)" }}
+          className="btn-gradient flex-1 py-2 rounded-lg text-sm font-semibold focus-brand"
         >
           Save
         </button>

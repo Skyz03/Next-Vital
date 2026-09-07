@@ -59,63 +59,96 @@ export default function Home() {
       <div className="w-full max-w-xl">
         {/* Wordmark */}
         <div className="mb-10 text-center">
-          <h1 className="text-4xl font-bold tracking-tight text-[var(--text)] mb-3">
-            Next<span style={{ color: "var(--brand)" }}>vital</span>
+          <div className="inline-flex items-center gap-1.5 mb-6 px-3 py-1 rounded-full glass text-xs text-[var(--text-2)] font-medium">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
+            Powered by PageSpeed Insights API
+          </div>
+
+          <h1 className="text-5xl font-bold tracking-tight mb-4">
+            <span className="text-[var(--text)]">Next</span>
+            <span className="gradient-text">vital</span>
           </h1>
-          <p className="text-[var(--text-2)] text-base leading-relaxed">
+
+          <p className="text-[var(--text-2)] text-base leading-relaxed max-w-sm mx-auto">
             Paste your Next.js app URL.<br />
-            Get fixes written for Next.js — not generic Lighthouse advice.
+            Get fixes written for Next.js —{" "}
+            <span className="text-[var(--text)]">not generic Lighthouse advice.</span>
           </p>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="flex rounded-xl border border-[var(--border)] overflow-hidden focus-within:ring-2 focus-within:ring-[var(--brand)] bg-[var(--surface)]">
-            <input
-              type="text"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://your-nextjs-app.vercel.app"
-              className="flex-1 px-4 py-3 text-sm bg-transparent outline-none text-[var(--text)] placeholder:text-[var(--text-2)]"
-              disabled={loading}
-              aria-label="URL to analyze"
-            />
-          </div>
+        {/* Form card */}
+        <div className="glass rounded-2xl p-6 shadow-2xl">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="flex rounded-xl border border-[var(--border-2)] overflow-hidden bg-[var(--surface)] transition-all duration-200 focus-within:border-[var(--brand-from)] focus-within:shadow-[0_0_0_3px_rgba(124,58,237,0.2)]">
+              <input
+                type="text"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                placeholder="https://your-nextjs-app.vercel.app"
+                className="flex-1 px-4 py-3 text-sm bg-transparent outline-none text-[var(--text)] placeholder:text-[var(--text-2)]"
+                disabled={loading}
+                aria-label="URL to analyze"
+              />
+            </div>
 
-          <div className="flex gap-2">
-            {(["mobile", "desktop"] as const).map((s) => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => setStrategy(s)}
-                className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${
-                  strategy === s
-                    ? "border-[var(--brand)] text-[var(--brand)] bg-[var(--surface-2)]"
-                    : "border-[var(--border)] text-[var(--text-2)] hover:border-[var(--text-2)]"
-                }`}
-              >
-                {s.charAt(0).toUpperCase() + s.slice(1)}
-              </button>
-            ))}
-          </div>
+            {/* Strategy toggle — segmented pill control */}
+            <div className="flex p-1 rounded-xl bg-[var(--surface-2)] border border-[var(--border)]">
+              {(["mobile", "desktop"] as const).map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setStrategy(s)}
+                  className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${
+                    strategy === s
+                      ? "bg-[var(--surface)] text-[var(--text)] shadow-sm border border-[var(--border-2)]"
+                      : "text-[var(--text-2)] hover:text-[var(--text)]"
+                  }`}
+                >
+                  {s === "mobile" ? (
+                    <span className="flex items-center justify-center gap-1.5">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <rect x="5" y="2" width="14" height="20" rx="2" />
+                        <circle cx="12" cy="17" r="1" fill="currentColor" stroke="none" />
+                      </svg>
+                      Mobile
+                    </span>
+                  ) : (
+                    <span className="flex items-center justify-center gap-1.5">
+                      <svg width="14" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <rect x="2" y="3" width="20" height="14" rx="2" />
+                        <path d="M8 21h8M12 17v4" />
+                      </svg>
+                      Desktop
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
 
-          <button
-            type="submit"
-            disabled={loading || !url.trim()}
-            className="w-full py-3 rounded-xl text-sm font-semibold text-white transition-opacity disabled:opacity-40"
-            style={{ background: "var(--brand)" }}
-          >
-            {loading ? "Running audit…" : "Analyze"}
-          </button>
+            <button
+              type="submit"
+              disabled={loading || !url.trim()}
+              className="btn-gradient w-full py-3 rounded-xl text-sm font-semibold focus-brand"
+            >
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+                    <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+                  </svg>
+                  Running audit…
+                </span>
+              ) : "Analyze"}
+            </button>
 
-          {error && (
-            <p className="text-sm text-[var(--poor)] text-center">{error}</p>
-          )}
-        </form>
+            {error && (
+              <p className="text-sm text-[var(--poor)] text-center">{error}</p>
+            )}
+          </form>
+        </div>
 
         {/* Footer note */}
-        <p className="text-center text-xs text-[var(--text-2)] mt-8">
-          Powered by PageSpeed Insights · 5 audits/hour per IP · Results cached 24h
+        <p className="text-center text-xs text-[var(--text-2)] mt-8 opacity-60">
+          PageSpeed Insights · 5 audits/hour per IP · Results cached 24h
         </p>
       </div>
     </main>
