@@ -13,23 +13,52 @@ export const metadata: Metadata = {
     template: "%s · Nextvital",
   },
   description: "Paste your Next.js app URL. Get performance fixes written specifically for Next.js — not generic Lighthouse advice.",
+  keywords: ["Next.js", "performance", "Lighthouse", "PageSpeed Insights", "Core Web Vitals", "web performance analyzer", "Next.js optimization"],
+  creator: "Nextvital",
+  category: "technology",
   openGraph: {
     title: "Nextvital",
     description: "Lighthouse results, interpreted for Next.js.",
     url: "/",
     siteName: "Nextvital",
     type: "website",
+    locale: "en_US",
   },
   twitter: {
     card: "summary_large_image",
     title: "Nextvital — Next.js Performance Analyzer",
     description: "Paste your Next.js URL. Get actionable performance fixes for Next.js.",
   },
+  alternates: {
+    canonical: "/",
+  },
+};
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  name: "Nextvital",
+  description: "Lighthouse audits interpreted for Next.js. Actionable fixes for performance, SEO, and accessibility.",
+  url: appUrl,
+  applicationCategory: "DeveloperApplication",
+  operatingSystem: "Any",
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "USD",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={inter.className} suppressHydrationWarning>
+      <head>
+        <meta name="theme-color" content="#7c3aed" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      </head>
       <body className="relative">
         <div className="nova-glow" aria-hidden="true" />
         <div className="relative z-10">{children}</div>
