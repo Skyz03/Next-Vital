@@ -1,285 +1,82 @@
-"use client";
-
-import { useEffect, useRef, useState, Suspense } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
-import type { AnalysisResult } from "@/types/analysis";
-import ScoreRing from "@/components/ScoreRing";
-import MetricCard from "@/components/MetricCard";
-import FixCard from "@/components/FixCard";
-import AiPanel from "@/components/AiPanel";
+import { Suspense } from "react";
+import { redirect } from "next/navigation";
+import { headers } from "next/headers";
+import Link from "next/link";
+import { UrlSchema } from "@/lib/validate";
+import { analyze } from "@/lib/analyze";
+import ResultsView from "@/components/ResultsView";
 import ResultsSkeleton from "@/components/ResultsSkeleton";
 
-const CATEGORY_META = {
-  performance: { label: "Performance" },
-  seo: { label: "SEO" },
-  accessibility: { label: "Accessibility" },
-} as const;
+export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
-function formatElapsed(sec: number): string {
-  const m = Math.floor(sec / 60);
-  const s = sec % 60;
-  return `${m}:${String(s).padStart(2, "0")}`;
+function getIP(h: Headers): string {
+  const realIp = h.get("x-real-ip");
+  if (realIp) return realIp;
+  const forwarded = h.get("x-forwarded-for");
+  if (forwarded) {
+    const parts = forwarded.split(",");
+    return parts[parts.length - 1].trim();
+  }
+  return "unknown";
 }
 
-function getStatusCopy(sec: number): string {
-  if (sec < 8) return "Contacting PageSpeed Insights…";
-  if (sec < 22) return "Google is running Lighthouse on your page…";
-  if (sec < 40) return "Mapping audits to Next.js fixes…";
-  return "Still going — complex pages can take a minute.";
-}
-
-interface HeaderProps {
-  url: string;
-  strategy: string;
-  result?: AnalysisResult | null;
-}
-
-function Header({ url, strategy, result }: HeaderProps) {
-  const router = useRouter();
+function Header({ url, strategy }: { url: string; strategy: string }) {
   return (
     <div>
-      <button
-        onClick={() => router.push("/")}
+      <Link
+        href="/"
         className="inline-flex items-center gap-1 text-xs text-[var(--text-2)] hover:text-[var(--text)] mb-3 transition-colors"
       >
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M19 12H5M12 5l-7 7 7 7" />
         </svg>
         New audit
-      </button>
+      </Link>
       <h1 className="text-lg font-semibold text-[var(--text)] break-all">{url}</h1>
-      <p className="text-xs text-[var(--text-2)] mt-1">
-        {strategy} · Lighthouse {result?.lighthouseVersion ?? "…"}
-        {result?.fromCache && (
-          <span className="ml-2 text-[var(--needs)]">
-            · Cached {new Date(result.cachedAt).toLocaleString()}
-          </span>
-        )}
-      </p>
+      <p className="text-xs text-[var(--text-2)] mt-1 capitalize">{strategy}</p>
     </div>
   );
 }
 
-function ResultsContent() {
-  const params = useSearchParams();
-  const router = useRouter();
+async function ResultsLoader({ url, strategy }: { url: string; strategy: "mobile" | "desktop" }) {
+  const ip = getIP(await headers());
+  const outcome = await analyze({ url, strategy, ip });
 
-  const urlParam = params.get("url") ?? "";
-  const strategyParam = (params.get("strategy") ?? "mobile") as "mobile" | "desktop";
-
-  const [result, setResult] = useState<AnalysisResult | null>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [elapsed, setElapsed] = useState(0);
-  const [showSkeleton, setShowSkeleton] = useState(false);
-  const abortRef = useRef<AbortController | null>(null);
-
-  useEffect(() => {
-    if (!urlParam) {
-      router.replace("/");
-      return;
-    }
-
-    const controller = new AbortController();
-    abortRef.current = controller;
-
-    let timerInterval: ReturnType<typeof setInterval> | null = null;
-    let skeletonTimeout: ReturnType<typeof setTimeout> | null = null;
-
-    setElapsed(0);
-    setShowSkeleton(false);
-
-    timerInterval = setInterval(() => setElapsed((e) => e + 1), 1000);
-    skeletonTimeout = setTimeout(() => setShowSkeleton(true), 150);
-
-    fetch("/api/analyze", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url: urlParam, strategy: strategyParam }),
-      signal: controller.signal,
-    })
-      .then(async (res) => {
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.message ?? "Something went wrong.");
-        return data as AnalysisResult;
-      })
-      .then((data) => {
-        setResult(data);
-        setShowSkeleton(false);
-      })
-      .catch((err: Error) => {
-        if (err.name === "AbortError") return;
-        setLoadError(err.message ?? "Failed to load results.");
-      })
-      .finally(() => {
-        if (timerInterval) clearInterval(timerInterval);
-      });
-
-    return () => {
-      controller.abort();
-      if (timerInterval) clearInterval(timerInterval);
-      if (skeletonTimeout) clearTimeout(skeletonTimeout);
-    };
-  }, [params, router, urlParam, strategyParam]);
-
-  if (loadError) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-4 text-center">
-        <p className="text-sm text-[var(--poor)]">{loadError}</p>
-        <button
-          onClick={() => router.push("/")}
-          className="text-xs text-[var(--text-2)] hover:text-[var(--text)] transition-colors"
-        >
-          ← New audit
-        </button>
-      </div>
-    );
+  if (!outcome.ok) {
+    // Nearest error.tsx catches this. The message surfaces from AnalysisError.
+    throw new Error(outcome.error.message);
   }
 
-  if (!result) {
-    return (
-      <main className="min-h-screen px-4 py-12">
-        <div className="max-w-2xl mx-auto space-y-10">
-          <Header url={urlParam} strategy={strategyParam} />
+  return <ResultsView report={outcome.result} />;
+}
 
-          <div className="flex items-center justify-between gap-4 glass rounded-xl px-4 py-3">
-            <p className="text-sm text-[var(--text-2)]">
-              <span className="font-mono tabular-nums text-[var(--text)]">{formatElapsed(elapsed)}</span>
-              {" · "}
-              {getStatusCopy(elapsed)}
-            </p>
-            <button
-              onClick={() => {
-                abortRef.current?.abort();
-                router.push("/");
-              }}
-              className="text-xs text-[var(--text-2)] hover:text-[var(--text)] shrink-0 transition-colors"
-            >
-              Cancel
-            </button>
-          </div>
+interface PageProps {
+  searchParams: Promise<{ url?: string; strategy?: string }>;
+}
 
-          {showSkeleton && <ResultsSkeleton />}
-        </div>
-      </main>
-    );
+export default async function ResultsPage({ searchParams }: PageProps) {
+  const { url: rawUrl, strategy: rawStrategy } = await searchParams;
+
+  if (!rawUrl) {
+    redirect("/");
   }
 
-  const scoreItems = [
-    { label: "Performance", score: result.performanceScore },
-    ...(result.seoScore != null ? [{ label: "SEO", score: result.seoScore }] : []),
-    ...(result.accessibilityScore != null ? [{ label: "Accessibility", score: result.accessibilityScore }] : []),
-  ];
+  const parsed = UrlSchema.safeParse({ url: rawUrl, strategy: rawStrategy });
+  if (!parsed.success) {
+    redirect("/");
+  }
 
-  const fixCategories = (["performance", "seo", "accessibility"] as const).map((cat) => ({
-    key: cat,
-    ...CATEGORY_META[cat],
-    fixes: result.fixes.filter((f) => f.category === cat),
-  })).filter((c) => c.fixes.length > 0);
-
-  const totalFixes = result.fixes.length;
+  const { url, strategy } = parsed.data;
 
   return (
     <main className="min-h-screen px-4 py-12">
       <div className="max-w-2xl mx-auto space-y-10">
-
-        <Header url={urlParam} strategy={strategyParam} result={result} />
-
-        {/* Score row */}
-        <div className="glass rounded-2xl py-8 px-6 flex gap-8 justify-center">
-          {scoreItems.map(({ label, score }) => (
-            <div key={label} className="flex flex-col items-center gap-2">
-              <ScoreRing score={score} size={96} />
-              <span className="text-xs font-medium text-[var(--text-2)] uppercase tracking-widest">{label}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* Performance metrics */}
-        <section>
-          <h2 className="gradient-text text-xs font-semibold uppercase tracking-widest mb-4">
-            Performance metrics
-          </h2>
-          <div className="grid grid-cols-2 gap-3">
-            {result.metrics.map((m) => (
-              <MetricCard key={m.id} metric={m} />
-            ))}
-          </div>
-        </section>
-
-        {/* Fixes grouped by category */}
-        {totalFixes === 0 ? (
-          <section>
-            <h2 className="gradient-text text-xs font-semibold uppercase tracking-widest mb-4">
-              No fixes needed — great work
-            </h2>
-            <p className="text-sm text-[var(--text-2)]">
-              No performance, SEO, or accessibility improvements were detected.
-            </p>
-          </section>
-        ) : (
-          fixCategories.map((cat, catIndex) => (
-            <section key={cat.key}>
-              {catIndex > 0 && <hr className="section-sep mb-10 -mt-4" />}
-              <h2 className="gradient-text text-xs font-semibold uppercase tracking-widest mb-4">
-                {cat.fixes.length} {cat.label} fix{cat.fixes.length === 1 ? "" : "es"} found
-              </h2>
-              <div className="space-y-3">
-                {cat.fixes.map((fix, i) => (
-                  <FixCard
-                    key={fix.audit}
-                    fix={fix}
-                    index={catIndex === 0 ? i : i + 1}
-                  />
-                ))}
-              </div>
-            </section>
-          ))
-        )}
-
-        {/* Already optimized */}
-        {result.passingChecks && result.passingChecks.length > 0 && (
-          <section>
-            <h2 className="gradient-text text-xs font-semibold uppercase tracking-widest mb-4">
-              Already optimized
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {result.passingChecks.map((check) => (
-                <div
-                  key={check.audit}
-                  className="flex items-center gap-2.5 text-xs glass rounded-lg px-3 py-2.5"
-                >
-                  <svg
-                    width="12"
-                    height="12"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="rating-good shrink-0"
-                    aria-hidden="true"
-                  >
-                    <path d="M20 6L9 17l-5-5" />
-                  </svg>
-                  <span className="text-[var(--text)]">{check.title}</span>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        <AiPanel result={result} />
-
+        <Header url={url} strategy={strategy} />
+        <Suspense fallback={<ResultsSkeleton withProgress />}>
+          <ResultsLoader url={url} strategy={strategy} />
+        </Suspense>
       </div>
     </main>
-  );
-}
-
-export default function ResultsPage() {
-  return (
-    <Suspense>
-      <ResultsContent />
-    </Suspense>
   );
 }

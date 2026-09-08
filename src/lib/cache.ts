@@ -1,4 +1,6 @@
 import { Redis } from "@upstash/redis";
+import { randomBytes } from "node:crypto";
+import type { AnalysisResult } from "@/types/analysis";
 
 const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL!,
@@ -6,6 +8,7 @@ const redis = new Redis({
 });
 
 const TTL_SECONDS = 60 * 60 * 24; // 24 hours
+const PERMALINK_TTL_SECONDS = 60 * 60 * 24 * 30; // 30 days — shared links must outlive the analysis cache
 const RATE_LIMIT_WINDOW = 60 * 60; // 1 hour
 const RATE_LIMIT_MAX = 5;
 const AI_RATE_LIMIT_WINDOW = 60 * 60; // 1 hour
@@ -115,6 +118,33 @@ export async function releaseInflightLock(key: string): Promise<void> {
     await redis.del(`inflight:${key}`);
   } catch {
     // non-fatal; TTL will clean it up
+  }
+}
+
+// URL-safe 10-char ID from 8 random bytes → base64url. ~6e19 combinations —
+// collision probability is negligible at any realistic permalink volume.
+export function generatePermalinkId(): string {
+  return randomBytes(8).toString("base64url").slice(0, 10);
+}
+
+export function permalinkKey(id: string): string {
+  return `perma:${id}`;
+}
+
+export async function setPermalink(id: string, report: AnalysisResult): Promise<void> {
+  try {
+    await redis.set(permalinkKey(id), report, { ex: PERMALINK_TTL_SECONDS });
+  } catch {
+    // cache write failure is non-fatal
+  }
+}
+
+export async function getPermalink(id: string): Promise<AnalysisResult | null> {
+  try {
+    const value = await redis.get(permalinkKey(id));
+    return value ? (value as AnalysisResult) : null;
+  } catch {
+    return null;
   }
 }
 

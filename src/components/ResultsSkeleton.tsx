@@ -1,6 +1,14 @@
-export default function ResultsSkeleton() {
+import ProgressTimer from "./ProgressTimer";
+
+interface Props {
+  withProgress?: boolean;
+}
+
+export default function ResultsSkeleton({ withProgress = false }: Props) {
   return (
     <div className="space-y-10">
+      {withProgress && <ProgressTimer />}
+
       {/* Score rings row */}
       <div className="glass rounded-2xl py-8 px-6 flex gap-8 justify-center">
         {[0, 1, 2].map((i) => (
