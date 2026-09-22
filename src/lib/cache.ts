@@ -148,3 +148,19 @@ export async function getPermalink(id: string): Promise<AnalysisResult | null> {
   }
 }
 
+export function historyKey(sid: string): string {
+  return `history:${sid}`;
+}
+
+export async function setHistoryCache(key: string, value: unknown): Promise<void> {
+  try {
+    await redis.set(key, value, { ex: PERMALINK_TTL_SECONDS });
+  } catch {}
+}
+
+export async function delCache(key: string): Promise<void> {
+  try {
+    await redis.del(key);
+  } catch {}
+}
+

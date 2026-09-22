@@ -20,6 +20,8 @@
   --glow-needs: 0 0 18px color-mix(in srgb, var(--needs) 55%, transparent);
   --glow-poor:  0 0 18px color-mix(in srgb, var(--poor)  55%, transparent);
   --glow-brand: 0 0 28px color-mix(in srgb, var(--brand-from) 45%, transparent);
+  --accent-blue: #3B82F6;
+  --accent-pink: #EC4899;
 }
 
 /* Dark is default; light mode overrides */

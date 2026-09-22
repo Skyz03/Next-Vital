@@ -55,7 +55,7 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center px-4 py-20">
+    <main className="flex flex-col items-center justify-center min-h-full px-4 py-12">
       <div className="w-full max-w-xl">
         {/* Wordmark */}
         <div className="mb-10 text-center">

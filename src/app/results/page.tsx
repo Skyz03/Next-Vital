@@ -1,11 +1,11 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
-import Link from "next/link";
 import { UrlSchema } from "@/lib/validate";
 import { analyze } from "@/lib/analyze";
 import ResultsView from "@/components/ResultsView";
 import ResultsSkeleton from "@/components/ResultsSkeleton";
+import HistorySaver from "@/components/HistorySaver";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -24,15 +24,6 @@ function getIP(h: Headers): string {
 function Header({ url, strategy }: { url: string; strategy: string }) {
   return (
     <div>
-      <Link
-        href="/"
-        className="inline-flex items-center gap-1 text-xs text-[var(--text-2)] hover:text-[var(--text)] mb-3 transition-colors"
-      >
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <path d="M19 12H5M12 5l-7 7 7 7" />
-        </svg>
-        New audit
-      </Link>
       <h1 className="text-lg font-semibold text-[var(--text)] break-all">{url}</h1>
       <p className="text-xs text-[var(--text-2)] mt-1 capitalize">{strategy}</p>
     </div>
@@ -48,7 +39,26 @@ async function ResultsLoader({ url, strategy }: { url: string; strategy: "mobile
     throw new Error(outcome.error.message);
   }
 
-  return <ResultsView report={outcome.result} />;
+  const { url: resultUrl, strategy: resultStrategy, performanceScore, seoScore, accessibilityScore, cachedAt, fixes } = outcome.result;
+  const topFixes = fixes
+    .filter((f) => f.impact === "high" || f.impact === "medium")
+    .slice(0, 10)
+    .map(({ audit, title, impact, category }) => ({ audit, title, impact, category }));
+
+  return (
+    <>
+      <HistorySaver
+        url={resultUrl}
+        strategy={resultStrategy}
+        performanceScore={performanceScore}
+        seoScore={seoScore}
+        accessibilityScore={accessibilityScore}
+        cachedAt={cachedAt}
+        topFixes={topFixes}
+      />
+      <ResultsView report={outcome.result} />
+    </>
+  );
 }
 
 interface PageProps {
@@ -70,7 +80,7 @@ export default async function ResultsPage({ searchParams }: PageProps) {
   const { url, strategy } = parsed.data;
 
   return (
-    <main className="min-h-screen px-4 py-12">
+    <main className="px-6 py-8">
       <div className="max-w-2xl mx-auto space-y-10">
         <Header url={url} strategy={strategy} />
         <Suspense fallback={<ResultsSkeleton withProgress />}>
