@@ -58,7 +58,7 @@ export default function ResultsView({ report, permalinkId }: Props) {
 
       {/* Performance metrics */}
       <section>
-        <h2 className="gradient-text text-xs font-semibold uppercase tracking-widest mb-4">
+        <h2 className="text-xs font-semibold uppercase tracking-widest mb-4 text-[var(--text-2)]">
           Performance metrics
         </h2>
         <div className="grid grid-cols-2 gap-3">
@@ -71,7 +71,7 @@ export default function ResultsView({ report, permalinkId }: Props) {
       {/* Fixes grouped by category */}
       {totalFixes === 0 ? (
         <section>
-          <h2 className="gradient-text text-xs font-semibold uppercase tracking-widest mb-4">
+          <h2 className="text-xs font-semibold uppercase tracking-widest mb-4 text-[var(--text-2)]">
             No fixes needed — great work
           </h2>
           <p className="text-sm text-[var(--text-2)]">
@@ -82,7 +82,7 @@ export default function ResultsView({ report, permalinkId }: Props) {
         fixCategories.map((cat, catIndex) => (
           <section key={cat.key}>
             {catIndex > 0 && <hr className="section-sep mb-10 -mt-4" />}
-            <h2 className="gradient-text text-xs font-semibold uppercase tracking-widest mb-4">
+            <h2 className="text-xs font-semibold uppercase tracking-widest mb-4 text-[var(--text-2)]">
               {cat.fixes.length} {cat.label} fix{cat.fixes.length === 1 ? "" : "es"} found
             </h2>
             <div className="space-y-3">
@@ -97,7 +97,7 @@ export default function ResultsView({ report, permalinkId }: Props) {
       {/* Already optimized */}
       {report.passingChecks && report.passingChecks.length > 0 && (
         <section>
-          <h2 className="gradient-text text-xs font-semibold uppercase tracking-widest mb-4">
+          <h2 className="text-xs font-semibold uppercase tracking-widest mb-4 text-[var(--text-2)]">
             Already optimized
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">

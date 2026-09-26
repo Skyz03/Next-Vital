@@ -11,15 +11,15 @@ export default function AppleIcon() {
           width: 180,
           height: 180,
           borderRadius: 42,
-          background: "linear-gradient(135deg, #7c3aed, #06b6d4)",
+          background: "#000000",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontSize: 88,
-          fontWeight: 700,
-          color: "#fff",
+          fontSize: 90,
+          fontWeight: 800,
+          color: "#ffffff",
           fontFamily: "system-ui, sans-serif",
-          letterSpacing: "-3px",
+          letterSpacing: "-4px",
         }}
       >
         Nv

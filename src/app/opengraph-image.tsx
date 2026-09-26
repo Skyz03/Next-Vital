@@ -18,20 +18,10 @@ export default function OGImage() {
           position: "relative",
           fontFamily: "system-ui, sans-serif",
           overflow: "hidden",
-          background: "#080b12",
+          background: "#FAFAFA",
+          borderBottom: "1px solid rgba(0,0,0,0.08)",
         }}
       >
-        {/* Ambient radial glows */}
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            display: "flex",
-            background:
-              "radial-gradient(ellipse 55% 50% at 15% 20%, rgba(124,58,237,0.35) 0%, transparent 65%), radial-gradient(ellipse 50% 45% at 85% 80%, rgba(6,182,212,0.28) 0%, transparent 65%)",
-          }}
-        />
-
         {/* Content stack */}
         <div
           style={{
@@ -50,10 +40,10 @@ export default function OGImage() {
               gap: 12,
               padding: "8px 20px",
               borderRadius: 100,
-              background: "rgba(255,255,255,0.07)",
-              border: "1px solid rgba(255,255,255,0.14)",
+              background: "#FFFFFF",
+              border: "1px solid rgba(0,0,0,0.08)",
               fontSize: 16,
-              color: "#94a3b8",
+              color: "#6B7280",
               letterSpacing: 1,
             }}
           >
@@ -62,7 +52,7 @@ export default function OGImage() {
                 width: 8,
                 height: 8,
                 borderRadius: "50%",
-                background: "#22c55e",
+                background: "#16A34A",
                 display: "flex",
               }}
             />
@@ -79,8 +69,7 @@ export default function OGImage() {
               lineHeight: 1,
             }}
           >
-            <span style={{ color: "#f1f5f9" }}>Next</span>
-            <span style={{ color: "#7c3aed" }}>vital</span>
+            <span style={{ color: "#171717" }}>Nextvital</span>
           </div>
 
           {/* Tagline */}
@@ -91,7 +80,7 @@ export default function OGImage() {
               alignItems: "center",
               gap: 8,
               fontSize: 30,
-              color: "#94a3b8",
+              color: "#6B7280",
               maxWidth: 700,
               textAlign: "center",
               lineHeight: 1.4,
@@ -99,64 +88,37 @@ export default function OGImage() {
             }}
           >
             <span>Lighthouse results, interpreted for Next.js.</span>
-            <span style={{ color: "#cbd5e1", fontWeight: 500 }}>
+            <span style={{ color: "#171717", fontWeight: 500 }}>
               Actionable fixes — not generic advice.
             </span>
           </div>
 
           {/* Feature pills */}
           <div style={{ display: "flex", gap: 16, marginTop: 8 }}>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                padding: "8px 20px",
-                borderRadius: 100,
-                background: "rgba(255,255,255,0.06)",
-                border: "1px solid rgba(255,255,255,0.12)",
-                fontSize: 18,
-                color: "#e2e8f0",
-                fontWeight: 500,
-              }}
-            >
-              <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#22c55e", display: "flex" }} />
-              <span>Performance</span>
-            </div>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                padding: "8px 20px",
-                borderRadius: 100,
-                background: "rgba(255,255,255,0.06)",
-                border: "1px solid rgba(255,255,255,0.12)",
-                fontSize: 18,
-                color: "#e2e8f0",
-                fontWeight: 500,
-              }}
-            >
-              <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#06b6d4", display: "flex" }} />
-              <span>SEO</span>
-            </div>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                padding: "8px 20px",
-                borderRadius: 100,
-                background: "rgba(255,255,255,0.06)",
-                border: "1px solid rgba(255,255,255,0.12)",
-                fontSize: 18,
-                color: "#e2e8f0",
-                fontWeight: 500,
-              }}
-            >
-              <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#a78bfa", display: "flex" }} />
-              <span>Accessibility</span>
-            </div>
+            {[
+              { label: "Performance", dot: "#16A34A" },
+              { label: "SEO", dot: "#000000" },
+              { label: "Accessibility", dot: "#D97706" },
+            ].map(({ label, dot }) => (
+              <div
+                key={label}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  padding: "8px 20px",
+                  borderRadius: 100,
+                  background: "#FFFFFF",
+                  border: "1px solid rgba(0,0,0,0.08)",
+                  fontSize: 18,
+                  color: "#171717",
+                  fontWeight: 500,
+                }}
+              >
+                <div style={{ width: 10, height: 10, borderRadius: "50%", background: dot, display: "flex" }} />
+                <span>{label}</span>
+              </div>
+            ))}
           </div>
         </div>
 
@@ -167,7 +129,7 @@ export default function OGImage() {
             bottom: 36,
             display: "flex",
             fontSize: 18,
-            color: "#475569",
+            color: "#6B7280",
           }}
         >
           nextvital.vercel.app

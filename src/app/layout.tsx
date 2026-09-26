@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import { headers } from "next/headers";
 import LeftNav from "@/components/dashboard/LeftNav";
 import AppTopBar from "@/components/AppTopBar";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"], display: "swap" });
+const geist = Geist({ subsets: ["latin"], variable: "--font-geist", display: "swap" });
+const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono", display: "swap" });
 
 const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
@@ -56,9 +57,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const nonce = (await headers()).get("x-nonce") ?? undefined;
 
   return (
-    <html lang="en" className={inter.className} suppressHydrationWarning>
+    <html lang="en" className={`${geist.variable} ${geistMono.variable}`} suppressHydrationWarning>
       <head>
-        <meta name="theme-color" content="#7c3aed" />
+        <meta name="theme-color" content="#ffffff" />
         <script
           nonce={nonce}
           type="application/ld+json"
@@ -67,8 +68,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         />
       </head>
       <body>
-        <div className="nova-glow" aria-hidden="true" />
-        <div className="flex h-screen overflow-hidden relative z-10">
+        <div className="flex h-screen overflow-hidden">
           <LeftNav />
           <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
             <AppTopBar />

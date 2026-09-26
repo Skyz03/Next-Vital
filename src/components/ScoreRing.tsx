@@ -49,10 +49,10 @@ export default function ScoreRing({ score, size = 120 }: Props) {
           strokeDashoffset={circumference}
           transform="rotate(-90 50 50)"
         />
-        <text x="50" y="46" textAnchor="middle" fontSize="22" fontWeight="700" fill={color} fontFamily="Inter, sans-serif">
+        <text x="50" y="46" textAnchor="middle" fontSize="22" fontWeight="700" fill={color} fontFamily="Geist, system-ui, sans-serif">
           {score}
         </text>
-        <text x="50" y="60" textAnchor="middle" fontSize="9" fill="var(--text-2)" fontFamily="Inter, sans-serif">
+        <text x="50" y="60" textAnchor="middle" fontSize="9" fill="var(--text-2)" fontFamily="Geist, system-ui, sans-serif">
           / 100
         </text>
       </svg>

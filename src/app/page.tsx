@@ -60,7 +60,7 @@ export default function Home() {
         {/* Wordmark */}
         <div className="mb-10 text-center">
           <div className="inline-flex items-center gap-1.5 mb-6 px-3 py-1 rounded-full glass text-xs text-[var(--text-2)] font-medium">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
+            <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ backgroundColor: "var(--good)" }} />
             Powered by PageSpeed Insights API
           </div>
 
@@ -79,7 +79,7 @@ export default function Home() {
         {/* Form card */}
         <div className="glass rounded-2xl p-6 shadow-2xl">
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="flex rounded-xl border border-[var(--border-2)] overflow-hidden bg-[var(--surface)] transition-all duration-200 focus-within:border-[var(--brand-from)] focus-within:shadow-[0_0_0_3px_rgba(124,58,237,0.2)]">
+            <div className="flex rounded-xl border border-[var(--border-2)] overflow-hidden bg-[var(--surface)] transition-all duration-200 focus-within:border-[var(--brand-from)] focus-within:shadow-[0_0_0_3px_rgba(0,0,0,0.12)]">
               <input
                 type="text"
                 value={url}

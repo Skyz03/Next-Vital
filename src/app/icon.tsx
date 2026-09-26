@@ -11,18 +11,18 @@ export default function Icon() {
           width: 32,
           height: 32,
           borderRadius: 8,
-          background: "linear-gradient(135deg, #7c3aed, #06b6d4)",
+          background: "#000000",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontSize: 15,
-          fontWeight: 700,
-          color: "#fff",
+          fontSize: 16,
+          fontWeight: 800,
+          color: "#ffffff",
           fontFamily: "system-ui, sans-serif",
-          letterSpacing: "-0.5px",
+          letterSpacing: "-1px",
         }}
       >
-        Nv
+        N
       </div>
     ),
     { ...size }

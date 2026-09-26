@@ -39,8 +39,8 @@ function AuditCard({ entry }: { entry: HistoryEntry }) {
           <span
             className="text-[10px] px-2 py-0.5 rounded-full font-medium capitalize"
             style={{
-              backgroundColor: "color-mix(in srgb, var(--brand-from) 15%, transparent)",
-              color: "var(--brand-from)",
+              backgroundColor: "var(--surface-3)",
+              color: "var(--text-2)",
             }}
           >
             {entry.strategy}
@@ -130,7 +130,7 @@ function FixChecklist({
     <div className="glass rounded-2xl p-4 flex flex-col gap-3">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="gradient-text text-xs font-semibold uppercase tracking-widest">
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-[var(--text-2)]">
           Fix Checklist
         </h2>
         <span className="text-[10px]" style={{ color: "var(--text-2)" }}>
@@ -144,7 +144,7 @@ function FixChecklist({
           className="h-full rounded-full transition-all duration-500"
           style={{
             width: `${fixes.length ? (done / fixes.length) * 100 : 0}%`,
-            background: "linear-gradient(90deg, var(--brand-from), var(--brand-to))",
+            background: "var(--brand-from)",
           }}
         />
       </div>
@@ -167,7 +167,7 @@ function FixChecklist({
                 className="w-4 h-4 rounded shrink-0 mt-0.5 flex items-center justify-center transition-all"
                 style={{
                   border: `1.5px solid ${isDone ? "var(--brand-from)" : "var(--border-2)"}`,
-                  backgroundColor: isDone ? "color-mix(in srgb, var(--brand-from) 80%, transparent)" : "transparent",
+                  backgroundColor: isDone ? "var(--text)" : "transparent",
                 }}
               >
                 {isDone && (

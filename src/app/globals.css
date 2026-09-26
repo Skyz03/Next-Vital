@@ -1,43 +1,40 @@
 @import "tailwindcss";
 
 :root {
-  --brand-from: #7c3aed;          /* violet-600 — gradient start */
-  --brand-to:   #06b6d4;          /* cyan-500 — gradient end */
-  --brand:      #7c3aed;          /* fallback for single-color uses */
-  --brand-dim:  #5b21b6;          /* violet-800 */
-  --good:  #22c55e;
-  --needs: #f59e0b;
-  --poor:  #ef4444;
-  --surface:   #080b12;
-  --surface-2: #0f1623;
-  --surface-3: #161f30;
-  --border:    rgba(255,255,255,0.08);
-  --border-2:  rgba(255,255,255,0.14);
-  --text:   #f0f4ff;
-  --text-2: #6b7a99;
-  --mono: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
-  --glow-good:  0 0 18px color-mix(in srgb, var(--good)  55%, transparent);
-  --glow-needs: 0 0 18px color-mix(in srgb, var(--needs) 55%, transparent);
-  --glow-poor:  0 0 18px color-mix(in srgb, var(--poor)  55%, transparent);
-  --glow-brand: 0 0 28px color-mix(in srgb, var(--brand-from) 45%, transparent);
-  --accent-blue: #3B82F6;
-  --accent-pink: #EC4899;
+  --brand-from: #000000;
+  --brand-to:   #000000;
+  --brand:      #000000;
+  --brand-dim:  #4D4D4D;
+  --good:  #16A34A;
+  --needs: #D97706;
+  --poor:  #DC2626;
+  --surface:   #FFFFFF;
+  --surface-2: #FAFAFA;
+  --surface-3: #F5F5F5;
+  --border:    rgba(0,0,0,0.08);
+  --border-2:  rgba(0,0,0,0.15);
+  --text:   #171717;
+  --text-2: #6B7280;
+  --mono: var(--font-geist-mono), "Geist Mono", ui-monospace, monospace;
+  --glow-good:  none;
+  --glow-needs: none;
+  --glow-poor:  none;
+  --glow-brand: none;
+  --accent-blue: #000000;
 }
 
-/* Dark is default; light mode overrides */
-@media (prefers-color-scheme: light) {
+@media (prefers-color-scheme: dark) {
   :root {
-    --surface:   #f8fafc;
-    --surface-2: #ffffff;
-    --surface-3: #f1f5f9;
-    --border:    #e2e8f0;
-    --border-2:  #cbd5e1;
-    --text:   #0f172a;
-    --text-2: #64748b;
-    --glow-good: none;
-    --glow-needs: none;
-    --glow-poor: none;
-    --glow-brand: none;
+    --surface:   #000000;
+    --surface-2: #111111;
+    --surface-3: #1a1a1a;
+    --border:    rgba(255,255,255,0.08);
+    --border-2:  rgba(255,255,255,0.12);
+    --text:      #EDEDED;
+    --text-2:    #888888;
+    --glow-good:  0 0 18px color-mix(in srgb, var(--good)  45%, transparent);
+    --glow-needs: 0 0 18px color-mix(in srgb, var(--needs) 45%, transparent);
+    --glow-poor:  0 0 18px color-mix(in srgb, var(--poor)  45%, transparent);
   }
 }
 
@@ -45,10 +42,13 @@
 body {
   background: var(--surface);
   color: var(--text);
-  font-family: "Inter", system-ui, sans-serif;
+  font-family: var(--font-geist), "Geist", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   scrollbar-gutter: stable;
 }
+
+h1, h2, h3, h4 { letter-spacing: -0.03em; }
+.text-5xl, .text-4xl, .text-3xl { letter-spacing: -0.06em; }
 
 .rating-good    { color: var(--good); }
 .rating-needs   { color: var(--needs); }
@@ -59,30 +59,37 @@ body {
 
 /* ── Brand gradient helpers ─────────────────────────────────────── */
 .gradient-text {
-  background: linear-gradient(135deg, var(--brand-from), var(--brand-to));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--text);
+  -webkit-text-fill-color: unset;
+  background: none;
+  background-clip: unset;
 }
 
 .btn-gradient {
-  background: linear-gradient(135deg, var(--brand-from), var(--brand-to));
+  background: var(--brand-from);
   color: #fff;
   isolation: isolate;
-  transition: opacity 0.15s, box-shadow 0.2s;
+  transition: background 0.15s, box-shadow 0.15s;
 }
 .btn-gradient:hover:not(:disabled) {
-  opacity: 0.92;
-  box-shadow: var(--glow-brand);
+  background: var(--brand-dim);
 }
 .btn-gradient:disabled { opacity: 0.4; }
 
-/* ── Glass morphism surface ─────────────────────────────────────── */
+/* ── Card surface ───────────────────────────────────────────────── */
 .glass {
-  background: color-mix(in srgb, var(--surface-2) 72%, transparent);
-  backdrop-filter: blur(16px) saturate(160%);
-  -webkit-backdrop-filter: blur(16px) saturate(160%);
-  border: 1px solid var(--border-2);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.04);
+}
+
+@media (prefers-color-scheme: dark) {
+  .glass {
+    background: color-mix(in srgb, var(--surface-2) 72%, transparent);
+    backdrop-filter: blur(16px) saturate(160%);
+    -webkit-backdrop-filter: blur(16px) saturate(160%);
+    box-shadow: none;
+  }
 }
 
 /* ── Score ring glow wrappers ───────────────────────────────────── */
@@ -107,33 +114,14 @@ body {
   animation: shimmer 1.6s ease-in-out infinite;
 }
 
-/* ── Ambient background nova drift ─────────────────────────────── */
-@keyframes nova-drift {
-  0%   { transform: translate(0, 0) scale(1); }
-  33%  { transform: translate(3%, -4%) scale(1.06); }
-  66%  { transform: translate(-3%, 3%) scale(0.97); }
-  100% { transform: translate(0, 0) scale(1); }
-}
-
-.nova-glow {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  background:
-    radial-gradient(ellipse 60% 50% at 20% 15%, rgba(124,58,237,0.18) 0%, transparent 70%),
-    radial-gradient(ellipse 55% 45% at 80% 85%, rgba(6,182,212,0.14) 0%, transparent 70%);
-  animation: nova-drift 18s ease-in-out infinite;
-}
-
-/* ── Section gradient divider ───────────────────────────────────── */
+/* ── Section divider ────────────────────────────────────────────── */
 .section-sep {
   height: 1px;
   background: linear-gradient(
     90deg,
     transparent,
-    var(--border-2) 30%,
-    var(--border-2) 70%,
+    var(--border) 30%,
+    var(--border) 70%,
     transparent
   );
   border: none;

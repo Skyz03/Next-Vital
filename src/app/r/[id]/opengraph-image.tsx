@@ -50,19 +50,9 @@ export default async function OGImage({ params }: Props) {
           position: "relative",
           fontFamily: "system-ui, sans-serif",
           overflow: "hidden",
-          background: "#080b12",
+          background: "#FAFAFA",
         }}
       >
-        {/* Ambient radial glows */}
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            display: "flex",
-            background:
-              "radial-gradient(ellipse 55% 50% at 15% 20%, rgba(124,58,237,0.35) 0%, transparent 65%), radial-gradient(ellipse 50% 45% at 85% 80%, rgba(6,182,212,0.28) 0%, transparent 65%)",
-          }}
-        />
 
         <div
           style={{
@@ -83,8 +73,7 @@ export default async function OGImage({ params }: Props) {
               lineHeight: 1,
             }}
           >
-            <span style={{ color: "#f1f5f9" }}>Next</span>
-            <span style={{ color: "#7c3aed" }}>vital</span>
+            <span style={{ color: "#171717" }}>Nextvital</span>
           </div>
 
           {scores ? (
@@ -122,7 +111,7 @@ export default async function OGImage({ params }: Props) {
                       style={{
                         display: "flex",
                         fontSize: 20,
-                        color: "#94a3b8",
+                        color: "#6B7280",
                         fontWeight: 500,
                         letterSpacing: 2,
                         textTransform: "uppercase",
@@ -138,7 +127,7 @@ export default async function OGImage({ params }: Props) {
                 style={{
                   display: "flex",
                   fontSize: 24,
-                  color: "#cbd5e1",
+                  color: "#171717",
                   fontWeight: 500,
                 }}
               >
@@ -166,7 +155,7 @@ export default async function OGImage({ params }: Props) {
             bottom: 36,
             display: "flex",
             fontSize: 16,
-            color: "#475569",
+            color: "#6B7280",
             letterSpacing: 1,
           }}
         >

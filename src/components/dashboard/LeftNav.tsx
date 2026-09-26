@@ -54,10 +54,8 @@ export default function LeftNav() {
               href={item.href}
               className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-150 focus-brand"
               style={{
-                backgroundColor: active
-                  ? "color-mix(in srgb, var(--brand-from) 20%, transparent)"
-                  : "transparent",
-                color: active ? "var(--brand-from)" : "var(--text-2)",
+                backgroundColor: active ? "var(--surface-3)" : "transparent",
+                color: active ? "var(--text)" : "var(--text-2)",
               }}
               aria-label={item.label}
             >

@@ -42,7 +42,8 @@ export default function AppTopBar() {
           style={{ color: "var(--text-2)" }}
         >
           <span
-            className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block shrink-0"
+            className="w-1.5 h-1.5 rounded-full inline-block shrink-0"
+            style={{ backgroundColor: "var(--good)" }}
           />
           PageSpeed Insights API
         </div>

@@ -160,7 +160,7 @@ export default function AiPanel({ result }: Props) {
   return (
     <section>
       <div className="flex items-center justify-between gap-4 mb-4">
-        <h2 className="gradient-text text-xs font-semibold uppercase tracking-widest">
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-[var(--text-2)]">
           AI analysis
         </h2>
         {creds && !showSettings && (
