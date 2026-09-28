@@ -1,8 +1,7 @@
-# Nextvital page
+# Nextvital
 
-**PageSpeed Insights, interpreted for Next.js.** Paste a URL, get fixes that reference
-`next/image`, `next/font`, App Router patterns, dynamic imports, and ISR — not generic Lighthouse
-advice.
+**Stop guessing why your Next.js site is slow.** Paste a URL and get a ranked list of exactly what
+to fix — with the code to fix it.
 
 [![CI](https://github.com/Skyz03/Next-Vital/actions/workflows/ci.yml/badge.svg)](https://github.com/Skyz03/Next-Vital/actions/workflows/ci.yml)
 ![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)
@@ -13,60 +12,31 @@ advice.
 
 ---
 
-Most performance tools tell you to "optimize your images." Nextvital tells you which component to
-reach for, shows the before/after code, links the Next.js docs, and lists the specific files on your
-site that triggered it. The fix map covers **38 Lighthouse audits** across performance, SEO, and
-accessibility.
+## What you get
 
-On top of that deterministic layer, you can plug in **your own model** — a hosted API key, or a model
-running locally on your machine with no key at all — to turn a report into a prioritised action plan
-and ask follow-up questions about it. That layer is entirely optional; with nothing connected the app
-behaves exactly as it always has.
+**Audit any public URL in seconds.** Nextvital calls Google PageSpeed Insights, pulls out the
+failures, and maps each one to the exact Next.js API that fixes it — `next/image`, `next/font`,
+dynamic imports, ISR, App Router patterns. No generic "optimize your images" advice.
 
-## How it works
+**See before/after code.** Every fix card shows a collapsible code example alongside the Lighthouse
+audit that triggered it, a savings estimate, and a link to the Next.js docs.
 
-```
-URL input
-  → Zod validation + SSRF block (private IPs, IPv6, internal hostnames, non-HTTP schemes)
-  → Redis cache check (24h TTL — cached hits are instant and cost no quota)
-  → Per-IP rate limit (5 live audits/hour) + in-flight lock + global daily budget
-  → Google PageSpeed Insights API (performance + SEO + accessibility)
-  → Shaping layer — Core Web Vitals, failed audits, savings estimates, flagged resources
-  → Next.js fix map — maps PSI audit IDs → actionable Next.js fixes
-  → Results page — score rings, Core Web Vitals, fix cards with code examples
-```
+**Track your progress on the Dashboard.** Every audit you run is saved automatically. The dashboard
+shows all your past results in one place with a unified fix checklist — ranked by impact — so you
+can check off fixes as you ship them.
 
-With a key configured, the results page can run a second pass:
+**Share results with a link.** Hit **Copy share link** on any results page to get a permanent URL
+you can send to your team. The shared page is fully server-rendered with correct metadata, so it
+looks right when pasted into Slack or a Linear ticket.
 
-```
-Action plan / follow-up question
-  → POST /api/explain with the key in an X-Provider-Key header
-  → Per-IP AI rate limit (60/hour — stops the route being used as an open LLM relay)
-  → Redis lookup of the cached audit (the prompt is built server-side from that,
-    never from the request body)
-  → Anthropic / Gemini / OpenRouter, streamed
-  (a local model skips all of the above: browser → localhost, direct)
-  → SSE normalised to plain-text deltas → rendered as it arrives
-```
+**Ask AI follow-up questions — with your own key.** Connect a provider (Anthropic, Gemini,
+OpenRouter, or a local Ollama model) and turn the report into an interactive action plan. The AI is
+told only what's in the audit — it cannot make up scores or recommendations that aren't there. This
+is entirely optional and costs you nothing unless you choose to use it.
 
-The decisions behind that pipeline — why the cache is checked before the rate limiter, why the rate
-limiter uses `EXPIRE NX`, why everything fails open, and how the shaping layer survives Lighthouse
-renaming its audits — are written up in **[docs/architecture.md](docs/architecture.md)**.
+---
 
-## Tech stack
-
-| Layer | Choice |
-|-------|--------|
-| Framework | Next.js 16 App Router (TypeScript) |
-| Styling | Tailwind CSS 4 + CSS custom properties |
-| Validation | Zod 4 |
-| Caching / rate limiting | Upstash Redis |
-| External API | Google PageSpeed Insights v5 (Lighthouse 13) |
-| AI (optional) | Bring-your-own key — Anthropic, Gemini, OpenRouter — or a keyless local model |
-| Tests | Vitest — 402 tests, no DOM dependencies |
-| CI | GitHub Actions (lint, typecheck, test, build on Node 20 + 22) |
-
-## Local setup
+## Quick start
 
 ```bash
 git clone https://github.com/Skyz03/Next-Vital.git
@@ -90,76 +60,48 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) and paste any public URL.
 
-## Bring your own model
+---
 
-The AI features are opt-in and run on **your** API key. Nothing is configured server-side — there is
-no key in `.env`, and the deployment never pays for a token.
+## AI features (optional)
 
-Open a report, click **Connect a model**, and choose a provider:
+The AI layer is opt-in and runs entirely on **your** API key — nothing is billed to the server.
+
+Open a results page, click **Connect a model**, and pick a provider:
 
 | Provider | Cost | Get it from |
 |----------|------|-------------|
-| **Local (Ollama)** | Free, and no account | [ollama.com](https://ollama.com/download) — no key at all; see below |
+| **Local (Ollama)** | Free, no account needed | [ollama.com](https://ollama.com/download) — runs on your machine |
 | **Google Gemini** | Free tier, no card required | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) |
-| **OpenRouter** | Free models available (`:free` slugs) | [openrouter.ai/keys](https://openrouter.ai/keys) — one key reaches 400+ models |
-| **Anthropic** | Pay-as-you-go | [console.anthropic.com](https://console.anthropic.com/settings/keys) — defaults to `claude-opus-5` |
-
-The model field is free text with suggestions rather than a fixed dropdown, because provider
-catalogues move faster than a hardcoded list survives.
+| **OpenRouter** | Free models available | [openrouter.ai/keys](https://openrouter.ai/keys) — 400+ models via one key |
+| **Anthropic** | Pay-as-you-go | [console.anthropic.com](https://console.anthropic.com/settings/keys) |
 
 ### "I have a subscription, not an API key"
 
-**A Claude Pro/Max, ChatGPT Plus or Gemini Advanced subscription cannot be used here** — not by this
-app and not by any third-party app. Those plans authenticate a browser session, not an API client:
-there is no token to issue and no OAuth flow that would grant one. Anything that claims otherwise is
-replaying a session cookie, which breaks on every logout and violates the provider's terms.
+A Claude Pro/Max, ChatGPT Plus, or Gemini Advanced subscription **cannot be used here** — those
+authenticate a browser session, not an API client. There is no key to issue. Two free alternatives:
 
-That is a limitation of what subscriptions are, not a gap in this app. But **paying is not the
-alternative** — there are two genuinely free routes:
-
-- **Run a model locally.** Install [Ollama](https://ollama.com/download), `ollama pull llama3.2`,
-  pick **Local (Ollama)**. No key, no account, no cost, no usage limit. Your browser talks to
-  `localhost` directly, so the report never touches our server or anyone else's — the most private
-  option available, and the only one that works offline. Smaller local models write shorter, blunter
-  plans than a frontier model; that is the trade.
+- **Run a local model.** `ollama pull llama3.2`, pick **Local (Ollama)**. No key, no cost, no usage
+  limit. The report never leaves your machine — the most private option and the only one that works
+  offline.
 - **Get a free Gemini key.** [AI Studio](https://aistudio.google.com/apikey) issues one in about
-  thirty seconds with no card. It is still technically an API key, but it costs nothing.
+  thirty seconds with no card required.
 
-If this page is not served from `localhost`, start Ollama with `OLLAMA_ORIGINS="*" ollama serve` so
-the browser is allowed to reach it.
+---
 
-### How the local option differs
+## Deploy to Vercel
 
-Everything else on this page describes the **proxied** providers, where the key goes to
-`/api/explain` and the prompt is built server-side from the cached audit. A local runtime inverts
-that: the endpoint is on your machine, which this server cannot reach and has no reason to relay
-through. So the request goes browser → `localhost` directly and the prompt is assembled client-side.
-There is no trust boundary to defend on that path — both ends are you. `/api/explain` rejects
-`provider: "local"` outright rather than pretending it could help.
+1. Import `Skyz03/Next-Vital` in the [Vercel dashboard](https://vercel.com/new). Framework and
+   package manager are auto-detected.
+2. Add the 4 environment variables under **Settings → Environment Variables**.
+3. Set `NEXT_PUBLIC_APP_URL` to your Vercel domain.
+4. Deploy. Redeploy once after the domain is live — `NEXT_PUBLIC_APP_URL` is inlined at build time
+   for OG images and the sitemap.
 
-### Where the key lives, and what that costs you
+---
 
-The key is kept in `localStorage` and attached to each request in an `X-Provider-Key` header. The
-server holds it only for the lifetime of that request: it is never written to Redis, never logged,
-and scrubbed from provider error text before it is echoed back.
+## Developer features
 
-The honest trade-off: **`localStorage` is readable by any script running on this origin.** This app
-loads no third-party scripts and sets no `script-src` CSP, so an XSS here would expose the key. That
-is inherent to any browser-held credential rather than specific to this design, and the blast radius
-is one revocable, user-owned provider key — but it is the reason full CSP moved up the roadmap. Use
-**Remove key** on a shared machine.
-
-Chat history is never persisted and never leaves the request.
-
-### What the model is told
-
-The prompt is assembled **server-side from the cached audit**, not from the request body. A caller
-chooses which report to discuss; it cannot choose what the model is told about it. The digest runs
-~1,100 tokens: scores, each Core Web Vital (explicitly flagged when Lighthouse could not measure
-it), and every failing audit with its impact, savings estimate and up to three flagged resources.
-The system prompt forbids inventing a number that is not in that data.
-
-## Scripts
+### Scripts
 
 ```bash
 npm run dev         # dev server
@@ -170,55 +112,96 @@ npm run typecheck   # tsc --noEmit
 npm run build       # production build
 ```
 
-## Deploy to Vercel
+### Tech stack
 
-1. Import `Skyz03/Next-Vital` in the [Vercel dashboard](https://vercel.com/new). Framework and
-   package manager are auto-detected.
-2. Add the 4 environment variables under **Settings → Environment Variables** (Production +
-   Preview).
-3. Set `NEXT_PUBLIC_APP_URL` to your Vercel domain (e.g. `https://nextvital.vercel.app`).
-4. Deploy. Once the domain is live, redeploy once — `NEXT_PUBLIC_APP_URL` is inlined at build time
-   for OG images and the sitemap.
+| Layer | Choice |
+|-------|--------|
+| Framework | Next.js 16 App Router (TypeScript) |
+| Styling | Tailwind CSS 4 + CSS custom properties |
+| Validation | Zod 4 |
+| Caching / rate limiting | Upstash Redis |
+| External API | Google PageSpeed Insights v5 (Lighthouse 13) |
+| AI (optional) | BYOK — Anthropic, Gemini, OpenRouter, or local Ollama |
+| Tests | Vitest — 402 tests, no DOM dependencies |
+| CI | GitHub Actions (lint, typecheck, test, build on Node 20 + 22) |
 
-## Project structure
+### How the pipeline works
+
+```
+URL input
+  → Zod validation + SSRF block (private IPs, IPv6, internal hostnames, non-HTTP schemes)
+  → Redis cache check (24h TTL)
+  → Per-IP rate limit (5 live audits/hour) + in-flight lock + global daily budget
+  → Google PageSpeed Insights API
+  → Shaping layer — Core Web Vitals, failed audits, savings estimates, flagged resources
+  → Next.js fix map (38 Lighthouse audit IDs → actionable fixes)
+  → Results page + auto-save to session history
+```
+
+AI second pass:
+
+```
+POST /api/explain  (key in X-Provider-Key header)
+  → Per-IP AI rate limit (60/hour)
+  → Redis lookup of cached audit — prompt built server-side, not from request body
+  → Anthropic / Gemini / OpenRouter, streamed as SSE
+  (local model: browser → localhost directly, skips all of the above)
+```
+
+The reasoning behind these decisions — why the cache is checked before the rate limiter, why
+`EXPIRE NX`, why everything fails open — is in **[docs/architecture.md](docs/architecture.md)**.
+
+### Sharing and history internals
+
+- **Permalinks** — `POST /api/share` mints a short random ID and writes the full cached report to
+  Redis. The `/r/[id]` page is server-rendered with OG/Twitter Card metadata and JSON-LD schema.
+  Share requests reuse the AI rate-limit bucket.
+- **Session history** — `GET/POST/DELETE /api/history` stores up to 20 entries per session in Redis
+  (30-day `httpOnly` session cookie). The dashboard's fix checklist state is persisted separately in
+  `localStorage`.
+
+### Project structure
 
 ```
 src/
 ├── app/
-│   ├── api/analyze/route.ts   # POST handler — validation, quota, PSI, cache
-│   ├── api/explain/route.ts   # POST handler — BYOK proxy, streams the model reply
+│   ├── api/analyze/route.ts   # POST — validation, quota, PSI, cache
+│   ├── api/explain/route.ts   # POST — BYOK proxy, streams model reply
+│   ├── api/share/route.ts     # POST — mint permalink IDs
+│   ├── api/history/route.ts   # GET/POST/DELETE — session audit history
+│   ├── r/[id]/page.tsx        # Shareable permalink page
+│   ├── dashboard/page.tsx     # Audit history + fix checklist
 │   ├── page.tsx               # URL input form
 │   └── results/page.tsx       # Score rings + metrics + fix cards
 ├── components/
+│   ├── AppTopBar.tsx          # Persistent top bar
 │   ├── ScoreRing.tsx          # Animated SVG score circle
 │   ├── MetricCard.tsx         # Core Web Vital tile
 │   ├── FixCard.tsx            # Collapsible fix with code example
-│   ├── AiPanel.tsx            # Action plan + chat, reads the streamed response
-│   ├── AiSettings.tsx         # Provider / model / API key form
-│   └── Markdown.tsx           # ~120-line renderer for the model output subset
+│   ├── AiPanel.tsx            # Action plan + chat
+│   ├── AiSettings.tsx         # Provider / model / key form
+│   ├── ResultsView.tsx        # Shared results layout (/results and /r/[id])
+│   ├── ShareButton.tsx        # Mints and copies a /r/[id] permalink
+│   ├── HistorySaver.tsx       # Auto-saves each result to session history
+│   ├── ProgressTimer.tsx      # Animated loading indicator
+│   ├── ResultsSkeleton.tsx    # Loading skeleton
+│   └── Markdown.tsx           # Renderer for model output
 ├── lib/
 │   ├── psi.ts                 # PSI fetch + response shaping
-│   ├── nextjs-fixes.ts        # PSI audit ID → Next.js fix map (single source of truth)
-│   ├── cache.ts               # Upstash Redis cache, rate limiter, in-flight lock
+│   ├── nextjs-fixes.ts        # Audit ID → Next.js fix map
+│   ├── cache.ts               # Redis cache, rate limiter, permalinks, history
 │   ├── validate.ts            # Zod schema + SSRF blocklist
-│   ├── byok.ts                # Browser-held credentials (useSyncExternalStore)
-│   ├── ai/                    # Provider registry, SSE parser, per-provider adapters
-│   │   ├── client.ts          # Picks the transport: proxy vs browser-direct
-│   │   ├── gemini.ts          # streamGenerateContent adapter
-│   │   └── openai-compat.ts   # Shared by OpenRouter and local runtimes
-│   └── __fixtures__/          # Real PSI responses, trimmed, for tests
+│   ├── byok.ts                # Browser-held credentials
+│   ├── history.ts             # HistoryEntry type + localStorage checklist helpers
+│   ├── analyze.ts             # Shared analysis logic
+│   └── ai/                    # Provider registry, SSE parser, adapters
 └── types/
-    ├── analysis.ts            # Shared TypeScript types
-    └── ai.ts                  # Provider, chat and error types
+    ├── analysis.ts
+    └── ai.ts
 ```
 
-## Roadmap
+### Roadmap
 
-- **Shareable result permalinks** — Redis-backed `/r/[id]` routes, server-rendered, with a per-result
-  OG card showing the actual scores.
-- **Server-side SEO checklist** ([`docs/seo-checklist-spec.md`](docs/seo-checklist-spec.md)) — direct
-  HTML inspection covering 22 checks. Deferred pending DNS-level SSRF hardening, which becomes
-  mandatory once this server fetches a submitted URL itself.
-- **Full CSP** — deferred, but no longer cosmetic. With BYOK shipped there is now a credential in
-  `localStorage`, and without a `script-src` policy an XSS on this origin could read it. See the
-  note under *Bring your own model*.
+- **Server-side SEO checklist** — direct HTML inspection covering 22 checks. Deferred pending
+  DNS-level SSRF hardening.
+- **Full CSP** — `script-src` policy to protect the BYOK credential in `localStorage`.
